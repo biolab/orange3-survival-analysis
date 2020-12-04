@@ -1,4 +1,5 @@
 import sysconfig
+
 # Category metadata.
 
 # Category icon show in the menu
@@ -14,15 +15,13 @@ WIDGET_HELP_PATH = (
     # You need to build help pages manually using
     # 'make htmlhelp' inside doc folder
     ('{DEVELOP_ROOT}/doc/_build/htmlhelp/index.html', None),
-
     # Documentation included in wheel
     # Correct DATA_FILES entry is needed in setup.py and documentation has to be built
     # before the wheel is created.
     ('{}/help/orange3-survival-analysis-analysis/index.html'.format(sysconfig.get_path('data')), None),
-
     # Online documentation url, used when the local documentation is not available.
     # Url should point to a page with a section Widgets. This section should
     # includes links to documentation pages of each widget. Matching is
     # performed by comparing link caption to widget name.
-    ('http://orange3-survival-analysis.readthedocs.io/en/latest/', '')
+    ('http://orange3-survival-analysis.readthedocs.io/en/latest/', ''),
 )
