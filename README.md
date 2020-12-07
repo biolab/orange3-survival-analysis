@@ -1,7 +1,7 @@
 Orange3-Survival-Analysis
 =========================
 
-Orange3 Survival Analysis add-on for the [Orange3](http://orange.biolab.si) 
+Orange3 Survival Analysis add-on for the [Orange3](http://orange.biolab.si)
 data mining suite.
 
 Installation
@@ -12,7 +12,7 @@ To install the add-on from source run
 
     pip install .
 
-To register this add-on with Orange, but keep the code in the development directory (do not copy it to 
+To register this add-on with Orange, but keep the code in the development directory (do not copy it to
 Python's site-packages directory), run
 
     pip install -e .
