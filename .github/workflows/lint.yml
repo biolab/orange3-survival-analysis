@@ -27,4 +27,4 @@ jobs:
           python -m pip install pre-commit
 
       - name: Lint
-        run: pre-commit run --show-diff-on-failure
+        run: pre-commit run --all-files --show-diff-on-failure
