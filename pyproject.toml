@@ -8,3 +8,8 @@ requires = [
 build-backend = 'setuptools.build_meta'
 
 [tool.setuptools_scm]
+
+[tool.black]
+line-length = 119
+skip_string_normalization = "1"
+target-version = ["py37", "py38"]
