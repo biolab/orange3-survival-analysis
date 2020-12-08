@@ -183,8 +183,6 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         y_pixel = self.HIGHLIGHT_RADIUS * y_pixel_size
 
         for curve_id, curve in self.curves.items():
-            if mouse_x_pos < curve.x[0] or mouse_x_pos > curve.x[-1]:
-                return
 
             points = np.column_stack((curve.x, curve.y))
             line_segments = np.column_stack((points[:-1, :], points[1:, :]))
