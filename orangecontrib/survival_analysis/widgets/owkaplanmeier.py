@@ -11,6 +11,7 @@ from AnyQt.QtCore import pyqtSignal as Signal
 from pyqtgraph.functions import mkPen
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
 from lifelines import KaplanMeierFitter
+from lifelines.utils import median_survival_times
 
 from Orange.data import Table, DiscreteVariable, ContinuousVariable
 from Orange.widgets import gui
@@ -59,7 +60,7 @@ class EstimatedFunctionCurve:
         self.selection = pg.PlotDataItem(pen=mkPen(color=QColor(Qt.yellow), width=4))
         self.selection.hide()
 
-        median = self._kmf.median_survival_time_
+        median = median_survival_times(self._kmf.survival_function_.astype(np.float32))
         self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=MEDIAN_LINE_PEN)
 
         censored_data = self.get_censored_data()
