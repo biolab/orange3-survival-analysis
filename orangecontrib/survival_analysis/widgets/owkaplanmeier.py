@@ -60,7 +60,7 @@ class EstimatedFunctionCurve:
         self.selection = pg.PlotDataItem(pen=mkPen(color=QColor(Qt.yellow), width=4))
         self.selection.hide()
 
-        median = median_survival_times(self._kmf.survival_function_.astype(np.float32))
+        self.median_survival = median = median_survival_times(self._kmf.survival_function_.astype(np.float32))
         self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=MEDIAN_LINE_PEN)
 
         censored_data = self.get_censored_data()
@@ -163,17 +163,16 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.curves: Dict[int, EstimatedFunctionCurve] = {}
         self.__selection_items: Dict[int, Optional[pg.PlotDataItem]] = {}
 
+        self.view_box: KaplanMeierViewBox = self.getViewBox()
+
         self._mouse_moved_signal = pg.SignalProxy(
             self.plotItem.scene().sigMouseMoved, slot=self.mouseMovedEvent, delay=0.15, rateLimit=10
         )
-
-        self.view_box: KaplanMeierViewBox = self.getViewBox()
         self.view_box.selection_changed.connect(self.on_selection_changed)
 
         self.legend = LegendItem()
         self.legend.setParentItem(self.getViewBox())
         self.legend.restoreAnchor(((1, 0), (1, 0)))
-        self.legend.hide()
 
     def mouseMovedEvent(self, ev):
         pos = self.view_box.mapSceneToView(ev[0])
@@ -210,6 +209,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
                 & (vertical_segments[:, 1] > mouse_y_pos)
                 & (mouse_y_pos > vertical_segments[:, 3])
             )
+
             if np.any(mouse_on_horizontal_segment) | np.any(mouse_on_vertical_segment):
                 self.highlight(curve_id)
                 return
@@ -276,7 +276,6 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         middle_selection = np.column_stack((curve.x, curve.y))[left:right]
         selected = np.vstack((left_selection, middle_selection, right_selection))
         self.selection[self.highlighted_curve] = SelectionInterval(selected[:, 0], selected[:, 1])
-
         self.set_selection_item(self.highlighted_curve)
 
         if is_finished:
@@ -377,7 +376,7 @@ class OWKaplanMeier(OWWidget):
         self.plot_curves = None
 
         time_var_model = DomainModel(valid_types=(ContinuousVariable,))
-        event_var_model = DomainModel()
+        event_var_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
         group_var_model = DomainModel(placeholder='(None)', valid_types=(DiscreteVariable,))
 
         box = gui.vBox(self.controlArea, 'Time', margin=0)
@@ -487,6 +486,7 @@ class OWKaplanMeier(OWWidget):
             return [
                 EstimatedFunctionCurve(time[mask], events[mask], color=color, label=label)
                 for mask, color, label in zip(masks, colors, self.group_var.values)
+                if mask.any()
             ]
 
         else:
