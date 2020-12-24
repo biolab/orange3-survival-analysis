@@ -60,7 +60,7 @@ class EstimatedFunctionCurve:
         self.selection = pg.PlotDataItem(pen=mkPen(color=QColor(Qt.yellow), width=4))
         self.selection.hide()
 
-        median = median_survival_times(self._kmf.survival_function_.astype(np.float32))
+        self.median_survival = median = median_survival_times(self._kmf.survival_function_.astype(np.float32))
         self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=MEDIAN_LINE_PEN)
 
         censored_data = self.get_censored_data()
