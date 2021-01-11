@@ -15,11 +15,12 @@ from lifelines.utils import median_survival_times
 
 from Orange.data import Table, DiscreteVariable, ContinuousVariable
 from Orange.widgets import gui
-from Orange.widgets.widget import Input, Output, OWWidget
+from Orange.widgets.widget import Input, Output, OWWidget, Msg
 from Orange.widgets.settings import Setting, ContextSetting, SettingProvider, PerfectDomainContextHandler
 from Orange.widgets.utils.plot import SELECT, PANNING, ZOOMING, OWPlotGUI
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
+from Orange.data.filter import IsDefined
 
 
 MEDIAN_LINE_PEN = pg.mkPen(color=QColor(Qt.darkGray), width=1, style=Qt.DashLine)
@@ -369,10 +370,14 @@ class OWKaplanMeier(OWWidget):
     class Outputs:
         selected_data = Output('Data', Table)
 
+    class Warning(OWWidget.Warning):
+        missing_values = Msg('Rows with missing values were omitted.')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data: Optional[Table] = None
+        self._data: Optional[Table] = None
         self.plot_curves = None
 
         time_var_model = DomainModel(valid_types=(ContinuousVariable,))
@@ -468,17 +473,25 @@ class OWKaplanMeier(OWWidget):
             return list(self.group_var.colors[index])
 
     def generate_plot_curves(self) -> List[EstimatedFunctionCurve]:
+        self._data = None
+        self.Warning.missing_values.clear()
+
         if self.time_var is None or self.event_var is None:
             return []
 
-        time, _ = self.data.get_column_view(self.time_var)
-        events, _ = self.data.get_column_view(self.event_var)
+        filter_ = IsDefined(columns=[self.time_var, self.event_var])
 
-        # time = np.array([2.5, 4, 4, 5, 6, 6])
-        # events = np.array([1, 1, 1, 1, 0, 0])
+        # if undefined values are detected in time_var or event_var omit rows with undefined values
+        if self.data[:, [self.time_var]].has_missing() or self.data[:, [self.event_var]].has_missing():
+            self._data = filter_(self.data)
+            self.Warning.missing_values()
+
+        data = self.data if self._data is None else self._data
+        time, _ = data.get_column_view(self.time_var)
+        events, _ = data.get_column_view(self.event_var)
 
         if self.group_var:
-            groups, _ = self.data.get_column_view(self.group_var)
+            groups, _ = data.get_column_view(self.group_var)
             group_indexes = [index for index, _ in enumerate(self.group_var.values)]
             colors = [self._get_discrete_var_color(index) for index in group_indexes]
             masks = groups == np.reshape(group_indexes, (-1, 1))
@@ -497,14 +510,16 @@ class OWKaplanMeier(OWWidget):
             self.Outputs.selected_data.send(None)
             return
 
-        time, _ = self.data.get_column_view(self.time_var)
+        data = self.data if self._data is None else self._data
+
+        time, _ = data.get_column_view(self.time_var)
         if self.group_var is None:
             time_interval = self.graph.selection[0].x
             start, end = time_interval[0], time_interval[-1]
             selection = np.argwhere((time >= start) & (time <= end)).reshape(-1).astype(int)
         else:
             selection = []
-            group, _ = self.data.get_column_view(self.group_var)
+            group, _ = data.get_column_view(self.group_var)
             for group_id, time_interval in self.graph.selection.items():
                 start, end = time_interval.x[0], time_interval.x[-1]
                 selection += (
@@ -512,7 +527,7 @@ class OWKaplanMeier(OWWidget):
                 )
             selection = sorted(selection)
 
-        self.Outputs.selected_data.send(self.data[selection, :])
+        self.Outputs.selected_data.send(data[selection, :])
 
     def sizeHint(self):
         return QSize(1280, 620)
