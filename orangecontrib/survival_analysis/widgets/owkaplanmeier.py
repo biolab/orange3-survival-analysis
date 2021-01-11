@@ -13,7 +13,7 @@ from pyqtgraph.graphicsItems.ViewBox import ViewBox
 from lifelines import KaplanMeierFitter
 from lifelines.utils import median_survival_times
 
-from Orange.data import Table, DiscreteVariable, ContinuousVariable
+from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable, TimeVariable
 from Orange.widgets import gui
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
 from Orange.widgets.settings import Setting, ContextSetting, SettingProvider, PerfectDomainContextHandler
@@ -435,10 +435,22 @@ class OWKaplanMeier(OWWidget):
         if not data:
             return
 
+        def _filter_domain_model_options(_domain):
+            vars_ = [var for var in _domain.variables + _domain.metas if not isinstance(var, TimeVariable)]
+            vars_ = [
+                var
+                for var in vars_
+                if isinstance(var, ContinuousVariable) or isinstance(var, DiscreteVariable) and len(var.values) <= 2
+            ]
+
+            return Domain(vars_)
+
         self.data = data
-        self.controls.time_var.model().set_domain(data.domain)
-        self.controls.event_var.model().set_domain(data.domain)
+        domain = _filter_domain_model_options(data.domain)
+        self.controls.time_var.model().set_domain(domain)
+        self.controls.event_var.model().set_domain(domain)
         self.controls.group_var.model().set_domain(data.domain)
+
         self.time_var = None
         self.event_var = None
         self.group_var = None
