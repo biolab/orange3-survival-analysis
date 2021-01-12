@@ -482,8 +482,10 @@ class OWKaplanMeier(OWWidget):
         filter_ = IsDefined(columns=[self.time_var, self.event_var])
 
         # if undefined values are detected in time_var or event_var omit rows with undefined values
-        if self.data[:, [self.time_var]].has_missing() or self.data[:, [self.event_var]].has_missing():
-            self._data = filter_(self.data)
+        self._data = filter_(self.data)
+        if len(self.data) == len(self._data):
+            self._data = None
+        else:
             self.Warning.missing_values()
 
         data = self.data if self._data is None else self._data
