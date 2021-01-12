@@ -35,7 +35,7 @@ class EstimatedFunctionCurve:
         return np.array(x), np.array(y)
 
     def __init__(self, time, events, label=None, color=None):
-        self._kmf = KaplanMeierFitter().fit(time, events)
+        self._kmf = KaplanMeierFitter().fit(time.astype(np.float64), events.astype(np.float64))
 
         self.label: str = label
         self.color: List[int] = color
