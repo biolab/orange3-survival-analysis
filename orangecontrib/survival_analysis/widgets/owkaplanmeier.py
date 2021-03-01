@@ -342,8 +342,7 @@ class OWKaplanMeier(OWWidget):
     name = 'Kaplan-Meier Plot'
     # TODO
     description = ''
-    # TODO
-    icon = ''
+    icon = 'icons/owkaplanmeier.svg'
     priority = 0
 
     show_confidence_interval: bool
