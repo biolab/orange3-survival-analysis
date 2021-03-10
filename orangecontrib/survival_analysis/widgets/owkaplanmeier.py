@@ -340,8 +340,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
 class OWKaplanMeier(OWWidget):
     name = 'Kaplan-Meier Plot'
-    # TODO
-    description = ''
+    description = 'Plot the Kaplan-Meier estimate.'
     icon = 'icons/owkaplanmeier.svg'
     priority = 0
 
@@ -360,6 +359,7 @@ class OWKaplanMeier(OWWidget):
     group_var: Optional[DiscreteVariable] = ContextSetting(None)
 
     graph = SettingProvider(KaplanMeierPlot)
+    graph_name = 'graph.plotItem'
 
     auto_commit: bool = Setting(False, schema_only=True)
 
@@ -541,6 +541,11 @@ class OWKaplanMeier(OWWidget):
             selection = sorted(selection)
 
         self.Outputs.selected_data.send(data[selection, :])
+
+    def send_report(self):
+        if self.data is None:
+            return
+        self.report_plot()
 
     def sizeHint(self):
         return QSize(1280, 620)
