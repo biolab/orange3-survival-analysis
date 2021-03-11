@@ -1,10 +1,12 @@
 import pyqtgraph as pg
 from pyqtgraph.tests import mouseMove, mousePress, mouseRelease, mouseClick
+from pyqtgraph.graphicsItems.LegendItem import LabelItem
+from pyqtgraph.Qt import QtTest
 
 from Orange.data.table import Table, Domain, StringVariable, ContinuousVariable, DiscreteVariable
 from orangewidget.tests.base import WidgetTest
 from orangecontrib.survival_analysis.widgets.owkaplanmeier import OWKaplanMeier
-from pyqtgraph.Qt import QtTest
+
 
 from AnyQt.QtCore import Qt
 
@@ -81,11 +83,15 @@ class TestOWKaplanMeier(WidgetTest):
         self.assertTrue(len(items) == 4)
 
     def test_legend(self):
-        self.assertFalse(self.widget.graph.legend.items)
+        legend = tuple(label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem))
+        self.assertIn('All', legend)
+
         self.widget.group_var = self.widget.data.domain['Group']
         self.widget.on_controls_changed()
-        legend_text = tuple(label.text for _, label in self.widget.graph.legend.items)
-        self.assertEqual(self.widget.group_var.values, legend_text)
+
+        legend = tuple(label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem))
+        for group in self.widget.group_var.values:
+            self.assertIn(group, legend)
 
     def test_curve_highlight(self):
         self.widget.group_var = self.widget.data.domain['Group']
@@ -106,6 +112,7 @@ class TestOWKaplanMeier(WidgetTest):
         selected_data = self.get_output(self.widget.Outputs.selected_data)
         self.assertIsNone(selected_data)
 
+        self.widget.graph.legend.hide()
         self.simulate_mouse_drag((0.1, 1), (6, 1))
 
         # check if correct curve is selected
@@ -131,6 +138,7 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.group_var = self.widget.data.domain['Group']
         self.widget.on_controls_changed()
 
+        self.widget.graph.legend.hide()
         self.simulate_mouse_drag((0.1, 1), (6, 1))
 
         # check if correct curve is selected
@@ -163,6 +171,7 @@ class TestOWKaplanMeier(WidgetTest):
         self.assertEqual(0, len(self.widget.graph.selection))
 
         # test selection of a second group
+        self.widget.graph.legend.hide()
         self.simulate_mouse_drag((0.4, 0.8), (6, 0.8))
 
         # check if correct curve is selected
