@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, NamedTuple
 from itertools import zip_longest
 from xml.sax.saxutils import escape
 
-from AnyQt.QtGui import QBrush, QColor
+from AnyQt.QtGui import QBrush, QColor, QPainterPath
 from AnyQt.QtCore import Qt, QSize
 from AnyQt.QtCore import pyqtSignal as Signal
 from pyqtgraph.functions import mkPen
@@ -25,6 +25,13 @@ from Orange.data.filter import IsDefined
 
 MEDIAN_LINE_PEN = pg.mkPen(color=QColor(Qt.darkGray), width=1, style=Qt.DashLine)
 HORIZONTAL_LINE = pg.InfiniteLine(pos=0.5, angle=0, pen=MEDIAN_LINE_PEN)
+
+
+def create_line_symbol():
+    p = QPainterPath()
+    p.moveTo(0, 0)
+    p.lineTo(0, -1)
+    return p
 
 
 class EstimatedFunctionCurve:
@@ -71,7 +78,8 @@ class EstimatedFunctionCurve:
             y=censored_data[:, 1],
             brush=QBrush(Qt.black),
             pen=self.get_pen(width=1, alpha=255),
-            # size=np.full((points.shape[0],), 10.1),
+            symbol=create_line_symbol(),
+            size=15,
         )
         self.censored_data.setZValue(10)
 
