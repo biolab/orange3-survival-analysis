@@ -221,7 +221,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
     HIGHLIGHT_RADIUS = 20  # in pixels
     selection_changed = Signal()
 
-    selection: Dict[int, Optional[SelectionInterval]] = Setting({}, schema_only=True)
+    selection: Dict[int, Optional[SelectionInterval]] = ContextSetting({})
 
     def __init__(self, parent=None):
         gui.OWComponent.__init__(self, widget=parent)
