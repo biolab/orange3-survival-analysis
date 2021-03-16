@@ -283,8 +283,10 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
             if np.any(mouse_on_horizontal_segment) | np.any(mouse_on_vertical_segment):
                 self.highlight(curve_id)
+                self.view_box.setCursor(Qt.PointingHandCursor)
                 return
             else:
+                self.view_box.setCursor(Qt.ArrowCursor)
                 self.highlight(None)
 
     def highlight(self, curve_id: Optional[int]):
