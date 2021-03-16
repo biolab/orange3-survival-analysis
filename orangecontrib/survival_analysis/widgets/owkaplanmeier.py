@@ -223,12 +223,11 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
     selection: Dict[int, Optional[SelectionInterval]] = ContextSetting({})
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: OWWidget = None):
         gui.OWComponent.__init__(self, widget=parent)
         pg.PlotWidget.__init__(self, parent=parent, viewBox=KaplanMeierViewBox(self))
 
-        self.setLabels(left='Survival Probability', bottom='Time')
-
+        self.parent: OWWidget = parent
         self.highlighted_curve: Optional[int] = None
         self.curves: Dict[int, EstimatedFunctionCurve] = {}
         self.__selection_items: Dict[int, Optional[pg.PlotDataItem]] = {}
@@ -243,6 +242,8 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend = CustomLegendItem()
         self.legend.setParentItem(self.getViewBox())
         self.legend.restoreAnchor(((1, 0), (1, 0)))
+
+        self.setLabels(left='Survival Probability', bottom=self.parent.time_var_label)
 
     def mouseMovedEvent(self, ev):
         pos = self.view_box.mapSceneToView(ev[0])
@@ -378,6 +379,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
         self.set_selection()
         self.update_legend()
+        self.setLabels(bottom=self.parent.time_var_label)
 
     def update_legend(self):
         self.legend.hide()
@@ -528,6 +530,13 @@ class OWKaplanMeier(OWWidget):
         self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
         self.graph.update_plot(**self._get_plot_options())
         self.commit()
+
+    @property
+    def time_var_label(self):
+        if not self.time_var:
+            return 'Time'
+
+        return self.time_var.name
 
     def _get_plot_options(self):
         return {
