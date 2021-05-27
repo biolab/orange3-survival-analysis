@@ -1,3 +1,4 @@
+import html
 import numpy as np
 import pyqtgraph as pg
 
@@ -11,12 +12,18 @@ from pyqtgraph.functions import mkPen
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
 from pyqtgraph.graphicsItems.LegendItem import ItemSample, LabelItem
 from lifelines import KaplanMeierFitter
-from lifelines.utils import median_survival_times
+from lifelines.utils import median_survival_times, format_p_value
+from lifelines.statistics import multivariate_logrank_test
 
 from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable, TimeVariable
 from Orange.widgets import gui
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
-from Orange.widgets.settings import Setting, ContextSetting, SettingProvider, PerfectDomainContextHandler
+from Orange.widgets.settings import (
+    Setting,
+    ContextSetting,
+    SettingProvider,
+    DomainContextHandler,
+)
 from Orange.widgets.utils.plot import SELECT, PANNING, ZOOMING, OWPlotGUI
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
@@ -181,6 +188,7 @@ class CustomLegendItem(LegendItem):
         self.layout.setVerticalSpacing(3)
         self._sample_column_label = 'n/N'
         self._median_column_label = 'Median'
+        self._log_rank_test_label = 'Log-rank p'
 
     def set_header(self):
         samples = LabelItem(self._sample_column_label)
@@ -209,6 +217,21 @@ class CustomLegendItem(LegendItem):
         self.layout.addItem(curve_label, row, 1)
         self.layout.addItem(samples, row, 2)
         self.layout.addItem(median, row, 3)
+
+    def set_footer(self, p):
+        separator = HLineItemSample()
+        log_rank_label = LabelItem(self._log_rank_test_label)
+        log_rank_p = LabelItem(html.escape(p))
+
+        row = self.layout.rowCount()
+        self.layout.addItem(separator, row, 1, row, 3)
+        self.items.append(separator)
+
+        row = self.layout.rowCount()
+        self.layout.addItem(log_rank_label, row, 2)
+        self.layout.addItem(log_rank_p, row, 3)
+        self.items.append(log_rank_label)
+        self.items.append(log_rank_p)
 
     def clear(self):
         for item in self.items:
@@ -303,7 +326,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
             curve.set_highlighted(True)
 
     def clear_selection(self, curve_id: Optional[int] = None):
-        """ If curve id is None clear all else clear only highlighted curve """
+        """If curve id is None clear all else clear only highlighted curve"""
         if curve_id is not None:
             self.curves[curve_id].selection.hide()
             self.selection = {key: val for key, val in self.selection.items() if key != curve_id}
@@ -389,6 +412,8 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend.set_header()
         for curve in [curve for curve in self.curves.values()]:
             self.legend.set_curve(curve)
+        if len(self.curves) > 1:
+            self.legend.set_footer(format_p_value(2)(self.parent.log_rank_test.p_value))
         self.legend.updateSize()
 
         if bool(len(self.legend.items)):
@@ -426,10 +451,10 @@ class OWKaplanMeier(OWWidget):
     show_censored_data: bool
     show_censored_data = Setting(False)
 
-    settingsHandler = PerfectDomainContextHandler()
-    time_var = ContextSetting(None)
-    event_var = ContextSetting(None)
-    group_var: Optional[DiscreteVariable] = ContextSetting(None)
+    settingsHandler = DomainContextHandler()
+    time_var = ContextSetting(None, schema_only=True)
+    event_var = ContextSetting(None, schema_only=True)
+    group_var: Optional[DiscreteVariable] = ContextSetting(None, schema_only=True)
 
     graph = SettingProvider(KaplanMeierPlot)
     graph_name = 'graph.plotItem'
@@ -451,6 +476,7 @@ class OWKaplanMeier(OWWidget):
         self.data: Optional[Table] = None
         self._data: Optional[Table] = None
         self.plot_curves = None
+        self.log_rank_test = None
 
         time_var_model = DomainModel(valid_types=(ContinuousVariable,))
         event_var_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
@@ -588,6 +614,7 @@ class OWKaplanMeier(OWWidget):
             group_indexes = [index for index, _ in enumerate(self.group_var.values)]
             colors = [self._get_discrete_var_color(index) for index in group_indexes]
             masks = groups == np.reshape(group_indexes, (-1, 1))
+            self.log_rank_test = multivariate_logrank_test(time, groups, events)
 
             return [
                 EstimatedFunctionCurve(time[mask], events[mask], color=color, label=label)
