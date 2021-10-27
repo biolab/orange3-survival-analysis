@@ -71,7 +71,6 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
             results = stacked_result[:, 1:].astype(float)
             _, pvals_corrected = fdrcorrection(results[:, -1], is_sorted=False)
             results = np.hstack((results, pvals_corrected.reshape(pvals_corrected.shape[0], -1)))
-
             return covariate_names, results
 
 
@@ -105,6 +104,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
 
         self.data: Optional[Table] = None
         self.attr_name_to_variable: Optional[Table] = None
+        self.covariates_from_worker_result = None
 
         time_var_model = DomainModel(valid_types=(ContinuousVariable,), order=(4,))
         box = gui.vBox(self.controlArea, 'Time', margin=0)
@@ -150,7 +150,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.commit_button = gui.auto_commit(self.buttonsArea, self, 'auto_commit', '&Commit', box=False)
 
         # Main area
-        self.model = PyTableModel()
+        self.model = PyTableModel(parent=self)
         self.table_view = TableView(parent=self)
         self.table_view.setModel(self.model)
         self.model.setHorizontalHeaderLabels(['Log-Likelihood', 'Log-Likelihood Ratio', f'{"p".center(13)}', 'FDR'])
@@ -175,6 +175,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     def set_data(self, data: Table):
         self.closeContext()
         self.selected_attrs = []
+        self.covariates_from_worker_result = []
         self.model.clear()
         self.model.resetSorting()
 
@@ -229,6 +230,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         # wrap everything except covariate names
         self.model.wrap(results.tolist())
 
+        # this is temp solution because covariate orders gets mixed when using multiprocessing
+        self.covariates_from_worker_result = covariate_names.tolist()
+
         # match covariate names to domain variables and set vertical header
         self.model.setVerticalHeaderLabels([self.attr_name_to_variable[name] for name in covariate_names])
         self.table_view.setVHeaderFixedWidthFromLabel(max((a.name for a in self.data.domain.attributes), key=len))
@@ -260,7 +264,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         else:
             selection = QItemSelection()
             if self.selected_attrs is not None:
-                attr_indices = [self.data.domain.attributes.index(var) for var in self.selected_attrs]
+                attr_indices = [self.covariates_from_worker_result.index(var.name) for var in self.selected_attrs]
                 for row in self.model.mapFromSourceRows(attr_indices):
                     selection.append(
                         QItemSelectionRange(self.model.index(row, 0), self.model.index(row, column_count - 1))
@@ -272,7 +276,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         selected_rows = self.table_view.selectionModel().selectedRows(0)
         row_indices = [i.row() for i in selected_rows]
         attr_indices = self.model.mapToSourceRows(row_indices)
-        self.selected_attrs = [self.data.domain[idx] for idx in attr_indices]
+        self.selected_attrs = [self.model._headers[Qt.Vertical][row] for row in attr_indices]
         self.commit()
 
 
