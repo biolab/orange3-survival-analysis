@@ -5,6 +5,16 @@ Change Log
 ------------
 * ...
 
+
+[0.3.0] - 2021-10-28
+--------------------
+##### Enhancements
+* owkaplanmeier: add log-rank to legend footer ([#17](../../pull/17))
+* New widget: Rank Survival Features ([#16](../../pull/16))
+* New widget: Stepwise Cox Regression ([#18](../../pull/18))
+* New widget: Cox Regression ([#23](../../pull/23))
+
+
 [0.2.0] - 2021-03-29
 --------------------
 ##### Enhancements
@@ -21,6 +31,7 @@ Change Log
 
 
 
-[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.2.0...master
+[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.3.0...master
+[0.3.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/biolab/orange3-survival-analysis/compare/20b2bd8ea02876eb9cad3925e0954054da2690de...0.1.0
