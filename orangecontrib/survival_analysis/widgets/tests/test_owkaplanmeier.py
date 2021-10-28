@@ -1,14 +1,39 @@
 import pyqtgraph as pg
-from pyqtgraph.tests import mouseMove, mousePress, mouseRelease, mouseClick
 from pyqtgraph.graphicsItems.LegendItem import LabelItem
-from pyqtgraph.Qt import QtTest
 
 from Orange.data.table import Table, Domain, StringVariable, ContinuousVariable, DiscreteVariable
-from orangewidget.tests.base import WidgetTest
+from Orange.widgets.tests.base import WidgetTest
 from orangecontrib.survival_analysis.widgets.owkaplanmeier import OWKaplanMeier
 
 
-from AnyQt.QtCore import Qt
+from AnyQt.QtCore import Qt, QEvent
+from AnyQt.QtGui import QMouseEvent
+from AnyQt.QtWidgets import QApplication, QGraphicsView
+from AnyQt.QtTest import QTest
+
+
+def mouse_press_and_hold(widget, pos, mouse_button=Qt.LeftButton):
+    if isinstance(widget, QGraphicsView):
+        widget = widget.viewport()
+
+    event = QMouseEvent(QEvent.MouseButtonPress, pos, mouse_button, Qt.NoButton, Qt.NoModifier)
+    QApplication.sendEvent(widget, event)
+
+
+def mouse_release(widget, pos, mouse_button=Qt.LeftButton):
+    if isinstance(widget, QGraphicsView):
+        widget = widget.viewport()
+
+    event = QMouseEvent(QEvent.MouseButtonRelease, pos, mouse_button, Qt.NoButton, Qt.NoModifier)
+    QApplication.sendEvent(widget, event)
+
+
+def mouse_move(widget, pos, buttons=Qt.NoButton):
+    if isinstance(widget, QGraphicsView):
+        widget = widget.viewport()
+
+    event = QMouseEvent(QEvent.MouseMove, pos, Qt.NoButton, buttons, Qt.NoModifier)
+    QApplication.sendEvent(widget, event)
 
 
 class TestOWKaplanMeier(WidgetTest):
@@ -54,12 +79,17 @@ class TestOWKaplanMeier(WidgetTest):
         start = self.widget.graph.view_box.mapViewToScene(pg.Point(start[0], start[1])).toPoint()
         end = self.widget.graph.view_box.mapViewToScene(pg.Point(end[0], end[1])).toPoint()
 
-        mouseMove(self.widget.graph, start)
-        QtTest.QTest.qWait(100)
-        mousePress(self.widget.graph, start, Qt.LeftButton)
-        mouseMove(self.widget.graph, end, Qt.LeftButton)
-        mouseRelease(self.widget.graph, end, Qt.LeftButton)
-        QtTest.QTest.qWait(100)
+        mouse_move(self.widget.graph, start)
+        # this is somehow not respected in KaplanMeierViewBox.mouseDragEvent so we do it here manualy
+        self.widget.graph.plotItem.scene().blockSignals(True)
+
+        QTest.qWait(100)
+        mouse_press_and_hold(self.widget.graph, start)
+        mouse_move(self.widget.graph, end, Qt.LeftButton)
+        QTest.qWait(100)
+        mouse_release(self.widget.graph, end)
+
+        self.widget.graph.plotItem.scene().blockSignals(False)
 
     def test_group_variable(self):
         # we expect only one curve
@@ -98,14 +128,14 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.on_controls_changed()
 
         pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.5)).toPoint()
-        mouseMove(self.widget.graph, pos)
+        mouse_move(self.widget.graph, pos)
         # We need to wait for events to process
-        QtTest.QTest.qWait(100)
+        QTest.qWait(100)
         self.assertTrue(self.widget.graph.highlighted_curve == 1)
 
         pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.85)).toPoint()
-        mouseMove(self.widget.graph, pos)
-        QtTest.QTest.qWait(100)
+        mouse_move(self.widget.graph, pos)
+        QTest.qWait(100)
         self.assertTrue(self.widget.graph.highlighted_curve == 0)
 
     def test_selection(self):
@@ -163,8 +193,8 @@ class TestOWKaplanMeier(WidgetTest):
 
         # reset selection
         pos = self.widget.graph.view_box.mapViewToScene(pg.Point(0, 0)).toPoint()
-        mouseClick(self.widget.graph, pos, Qt.LeftButton)
-        QtTest.QTest.qWait(100)
+        QTest.mouseClick(self.widget.graph.viewport(), Qt.LeftButton, pos=pos)
+        QTest.qWait(100)
 
         selected_data = self.get_output(self.widget.Outputs.selected_data)
         self.assertIsNone(selected_data)
