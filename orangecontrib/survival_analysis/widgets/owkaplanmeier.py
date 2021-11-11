@@ -30,8 +30,7 @@ from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.data.filter import IsDefined
 
 
-MEDIAN_LINE_PEN = pg.mkPen(color=QColor(Qt.darkGray), width=1, style=Qt.DashLine)
-HORIZONTAL_LINE = pg.InfiniteLine(pos=0.5, angle=0, pen=MEDIAN_LINE_PEN)
+MEDIAN_LINE_PEN_STYLE = {'color': QColor(Qt.darkGray), 'width': 1, 'style': Qt.DashLine}
 
 
 def create_line_symbol():
@@ -78,7 +77,7 @@ class EstimatedFunctionCurve:
         self.median_survival = median = np.round(
             median_survival_times(self._kmf.survival_function_.astype(np.float32)), 1
         )
-        self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=MEDIAN_LINE_PEN)
+        self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE))
 
         censored_data = self.get_censored_data()
 
@@ -385,7 +384,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
             return
 
         if median:
-            self.addItem(HORIZONTAL_LINE)
+            self.addItem(pg.InfiniteLine(pos=0.5, angle=0, pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE)))
 
         for curve in self.curves.values():
             self.addItem(curve.estimated_fun)
