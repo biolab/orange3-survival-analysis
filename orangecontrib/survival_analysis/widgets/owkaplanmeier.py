@@ -265,6 +265,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend = CustomLegendItem()
         self.legend.setParentItem(self.getViewBox())
         self.legend.restoreAnchor(((1, 0), (1, 0)))
+        self.legend.hide()
 
         self.setLabels(left='Survival Probability', bottom=self.parent.time_var_label)
 
