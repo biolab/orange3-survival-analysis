@@ -8,14 +8,14 @@ from AnyQt.QtGui import QColor
 from AnyQt.QtCore import Qt, QPointF, pyqtSignal as Signal
 
 from Orange.widgets import gui
-from Orange.widgets.settings import ContextSetting, DomainContextHandler, Setting, SettingProvider
+from Orange.widgets.settings import Setting, SettingProvider
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
-from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable
 from Orange.data.pandas_compat import table_to_frame
 
 from orangecontrib.survival_analysis.widgets.owcoxregression import CoxRegressionLearner, CoxRegressionModel
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
 
 
 class CustomInfiniteLine(pg.InfiniteLine):
@@ -122,13 +122,12 @@ def worker(df: pd.DataFrame, learner, initial_covariates: set, time_var: str, ev
 class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
     name = 'Stepwise Cox Regression'
     description = 'Backward feature elimination'
-    icon = ''
+    icon = 'icons/owstepwisecoxregression.svg'
+    priority = 40
 
     graph = SettingProvider(StepwiseCoxRegressionPlot)
     graph_name = 'graph.plotItem'
 
-    settingsHandler = DomainContextHandler()
-    time_var = ContextSetting(None, schema_only=True)
     auto_commit: bool = Setting(False, schema_only=True)
 
     class Inputs:
@@ -147,11 +146,8 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
         self.data_df: Optional[pd.DataFrame] = None
         self.attr_name_to_variable: Optional[dict] = None
         self.trace: Optional[List[Result]] = None
-
-        time_var_model = DomainModel(valid_types=(ContinuousVariable,), order=(4,))
-        box = gui.vBox(self.controlArea, 'Time', margin=0)
-        gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.on_controls_changed)
-
+        self.time_var = None
+        self.event_var = None
         gui.rubber(self.controlArea)
 
         self.graph: StepwiseCoxRegressionPlot = StepwiseCoxRegressionPlot(parent=self)
@@ -169,34 +165,32 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
         else:
             self.learner = CoxRegressionLearner()
 
-        self.on_controls_changed()
+        self.invalidate()
 
     @Inputs.data
+    @check_survival_data
     def set_data(self, data: Table):
-        self.closeContext()
         if not data:
             return
 
         self.data = data
+        self.time_var = self.data.attributes[TIME_COLUMN].name
+        self.event_var = self.data.attributes[EVENT_COLUMN].name
         self.attr_name_to_variable = {attr.name: attr for attr in self.data.domain.attributes}
         self.data_df = table_to_frame(data, include_metas=True)
-        self.data_df = self.data_df.astype({self.data.domain.class_var.name: np.float64})
+        self.data_df = self.data_df.astype({self.event_var: np.float64})
 
-        self.controls.time_var.model().set_domain(self.data.domain)
-        self.time_var = None
-        self.openContext(data)
+        self.invalidate()
 
-        self.on_controls_changed()
-
-    def on_controls_changed(self):
-        if self.time_var:
+    def invalidate(self):
+        if self.time_var and self.event_var:
             self.start(
                 worker,
                 self.data_df,
                 self.learner,
                 set(self.attr_name_to_variable.keys()),
-                self.time_var.name,
-                self.data.domain.class_var.name,
+                self.time_var,
+                self.event_var,
             )
 
     def on_selection_changed(self, selection_line):
