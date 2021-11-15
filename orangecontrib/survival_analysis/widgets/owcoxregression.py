@@ -1,26 +1,22 @@
 import numpy as np
 import pandas as pd
-from typing import Union
+from typing import Optional
 from itertools import chain
+
+from lifelines import CoxPHFitter
 
 from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QLayout, QSizePolicy
 
 from Orange.data import StringVariable
+from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable
+from Orange.data.pandas_compat import table_to_frame
 from Orange.widgets import settings, gui
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.signals import Output
-from Orange.widgets.settings import (
-    ContextSetting,
-    DomainContextHandler,
-)
 
-
-from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable, TimeVariable
-from Orange.data.pandas_compat import table_to_frame
-from lifelines import CoxPHFitter
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
 
 
 class CoxRegressionModel:
@@ -50,24 +46,28 @@ class CoxRegressionLearner:
 
     def __init__(self, *args, **kwargs):
         self.params = vars()
+        self.time_var: Optional[str] = None
+        self.event_var: Optional[str] = None
 
-    def fit(self, df, duration_col, event_col):
+    def fit(self, df):
         cph = CoxPHFitter(*self.params['args'], **self.params['kwargs'])
-        cph = cph.fit(df, duration_col=duration_col, event_col=event_col)
+        cph = cph.fit(df, duration_col=self.time_var, event_col=self.event_var)
         return CoxRegressionModel(cph)
 
-    def __call__(self, data: Union[Table, pd.DataFrame], duration_col: str, event_col: str):
-
+    def __call__(self, data: Table, time_var=None, event_var=None):
         if isinstance(data, Table):
             df = table_to_frame(data, include_metas=True)
-            df = df[[duration_col, event_col] + [attr.name for attr in data.domain.attributes]]
+            self.time_var = data.attributes[TIME_COLUMN].name
+            self.event_var = data.attributes[EVENT_COLUMN].name
+            df = df[[self.time_var, self.event_var] + [attr.name for attr in data.domain.attributes]]
         elif isinstance(data, pd.DataFrame):
+            self.time_var = time_var
+            self.event_var = event_var
             df = data
         else:
             raise ValueError('Wrong data type')
 
-        model = self.fit(df, duration_col, event_col)
-        return model
+        return self.fit(df)
 
 
 class OWCoxRegression(OWBaseLearner):
@@ -76,6 +76,8 @@ class OWCoxRegression(OWBaseLearner):
         'Cox proportional-hazards regression with optional L1 (LASSO), '
         'L2 (ridge) or L1L2 (elastic net) regularization.'
     )
+    icon = 'icons/owcoxregression.svg'
+    priority = 20
 
     LEARNER = CoxRegressionLearner
 
@@ -94,8 +96,6 @@ class OWCoxRegression(OWBaseLearner):
     ]
     OLS, Ridge, Lasso, Elastic = 0, 1, 2, 3
 
-    settingsHandler = DomainContextHandler()
-
     ridge = settings.Setting(False)
     reg_type = settings.Setting(OLS)
     alpha_index: int
@@ -103,9 +103,6 @@ class OWCoxRegression(OWBaseLearner):
     l2_ratio: int
     l2_ratio = settings.Setting(0.5)
     autosend = settings.Setting(True)
-
-    time_var = ContextSetting(None, schema_only=True)
-    event_var = ContextSetting(None, schema_only=True)
 
     alphas = list(
         chain(
@@ -120,15 +117,6 @@ class OWCoxRegression(OWBaseLearner):
     )
 
     def add_main_layout(self):
-        time_var_model = DomainModel(valid_types=(ContinuousVariable,))
-        event_var_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
-
-        box = gui.vBox(self.controlArea, 'Time', margin=0)
-        gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.on_controls_changed)
-
-        box = gui.vBox(self.controlArea, 'Event', margin=0)
-        gui.comboBox(box, self, 'event_var', model=event_var_model, callback=self.on_controls_changed)
-
         # this is part of init, pylint: disable=attribute-defined-outside-init
         box = gui.hBox(self.controlArea, 'Regularization')
         gui.radioButtons(box, self, 'reg_type', btnLabels=self.REGULARIZATION_TYPES, callback=self._reg_type_changed)
@@ -180,39 +168,12 @@ class OWCoxRegression(OWBaseLearner):
         self.l2_ratio_slider.setEnabled(self.reg_type == self.Elastic)
 
     @Inputs.data
+    @check_survival_data
     def set_data(self, data):
         """Set the input train dataset."""
-        self.closeContext()
         self.Error.data_error.clear()
         self.data = data
-
-        if not data:
-            self.data = None
-            self.update_model()
-            return
-
-        def _filter_domain_model_options(_domain):
-            vars_ = [var for var in _domain.metas if not isinstance(var, TimeVariable)]
-            vars_ = [
-                var
-                for var in vars_
-                if isinstance(var, ContinuousVariable) or isinstance(var, DiscreteVariable) and len(var.values) <= 2
-            ]
-
-            return Domain(vars_)
-
-        domain = _filter_domain_model_options(data.domain)
-        self.controls.time_var.model().set_domain(domain)
-        self.controls.event_var.model().set_domain(domain)
-
-        self.time_var = None
-        self.event_var = None
-        self.openContext(data.domain)
-
         self.update_model()
-
-    def on_controls_changed(self):
-        self.apply()
 
     def check_data(self):
         # TODO
@@ -224,8 +185,8 @@ class OWCoxRegression(OWBaseLearner):
         stratified_data = None
 
         try:
-            if self.time_var is not None and self.event_var is not None:
-                self.model: CoxRegressionModel = self.learner(self.data, self.time_var.name, self.event_var.name)
+            if self.data:
+                self.model: CoxRegressionModel = self.learner(self.data)
         except BaseException as exc:
             self.show_fitting_failed(exc)
 
@@ -307,4 +268,7 @@ class OWCoxRegression(OWBaseLearner):
 
 
 if __name__ == "__main__":
-    WidgetPreview(OWCoxRegression).run(Table("test_data2.tab"))
+    table = Table('http://datasets.biolab.si/core/melanoma.tab')
+    table.attributes['time_var'] = table.domain['time']
+    table.attributes['event_var'] = table.domain['event']
+    WidgetPreview(OWCoxRegression).run(input_data=table)
