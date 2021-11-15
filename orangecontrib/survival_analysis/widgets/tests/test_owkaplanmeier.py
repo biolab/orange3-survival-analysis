@@ -1,3 +1,5 @@
+import os
+
 import pyqtgraph as pg
 from pyqtgraph.graphicsItems.LegendItem import LabelItem
 
@@ -40,12 +42,13 @@ def mouse_move(widget, pos, buttons=Qt.NoButton):
 
 class TestOWKaplanMeier(WidgetTest):
     def setUp(self) -> None:
+        self.test_data_path = os.path.join(os.path.dirname(__file__), 'datasets')
         # create widgets
         self.as_survival = self.create_widget(OWAsSurvivalData)
         self.widget = self.create_widget(OWKaplanMeier)
 
         # handle survival data
-        self.send_signal(self.as_survival.Inputs.data, Table('./datasets/toy_example.tab'))
+        self.send_signal(self.as_survival.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab'))
         simulate.combobox_activate_item(self.as_survival.controls.time_var, self.as_survival._data.columns.Time.name)
         simulate.combobox_activate_item(self.as_survival.controls.event_var, self.as_survival._data.columns.Event.name)
         self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
@@ -77,7 +80,7 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.graph.plotItem.scene().blockSignals(False)
 
     def test_incorrect_input_data(self):
-        self.send_signal(self.widget.Inputs.data, Table('./datasets/toy_example.tab'))
+        self.send_signal(self.widget.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab'))
         self.assertTrue(self.widget.Error.missing_survival_data.is_shown())
         self.assertIsNone(self.widget.data)
         self.assertIsNone(self.widget.time_var)

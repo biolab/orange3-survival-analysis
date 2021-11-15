@@ -1,3 +1,5 @@
+import os
+
 from Orange.data.table import Table
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.tests.utils import simulate
@@ -8,8 +10,9 @@ from orangecontrib.survival_analysis.widgets.owassurvivaldata import OWAsSurviva
 
 class TestOWAsSurvivalData(WidgetTest):
     def setUp(self) -> None:
+        test_data_path = os.path.join(os.path.dirname(__file__), 'datasets')
         self.widget = self.create_widget(OWAsSurvivalData)
-        self.send_signal(self.widget.Inputs.data, Table('./datasets/toy_example.tab'))
+        self.send_signal(self.widget.Inputs.data, Table(f'{test_data_path}/toy_example.tab'))
         self.assertEqual(self.widget.controls.time_var.count(), 1)
         self.assertEqual(self.widget.controls.event_var.count(), 3)
 
