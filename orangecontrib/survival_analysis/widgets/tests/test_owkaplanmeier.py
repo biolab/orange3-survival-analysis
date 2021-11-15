@@ -1,15 +1,17 @@
 import pyqtgraph as pg
 from pyqtgraph.graphicsItems.LegendItem import LabelItem
 
-from Orange.data.table import Table, Domain, StringVariable, ContinuousVariable, DiscreteVariable
-from Orange.widgets.tests.base import WidgetTest
-from orangecontrib.survival_analysis.widgets.owkaplanmeier import OWKaplanMeier
-
-
 from AnyQt.QtCore import Qt, QEvent
 from AnyQt.QtGui import QMouseEvent
 from AnyQt.QtWidgets import QApplication, QGraphicsView
 from AnyQt.QtTest import QTest
+
+from Orange.data.table import Table
+from Orange.widgets.tests.base import WidgetTest, simulate
+from orangecontrib.survival_analysis.widgets.owassurvivaldata import OWAsSurvivalData
+from orangecontrib.survival_analysis.widgets.owkaplanmeier import OWKaplanMeier
+
+from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
 
 
 def mouse_press_and_hold(widget, pos, mouse_button=Qt.LeftButton):
@@ -38,38 +40,21 @@ def mouse_move(widget, pos, buttons=Qt.NoButton):
 
 class TestOWKaplanMeier(WidgetTest):
     def setUp(self) -> None:
-        domain = Domain(
-            [],
-            metas=[
-                StringVariable('Subject'),
-                ContinuousVariable('Time'),
-                DiscreteVariable('Event', values=('no', 'yes')),
-                DiscreteVariable('Group', values=('group1', 'group2')),
-            ],
-        )
-        test_data = Table.from_list(
-            domain,
-            [
-                ['B', 1, 1, 0],
-                ['E', 2, 1, 0],
-                ['F', 3, 1, 0],
-                ['A', 4, 1, 0],
-                ['D', 4.5, 1, 0],
-                ['C', 5, 0, 0],
-                ['U', 0.5, 1, 1],
-                ['Z', 0.75, 1, 1],
-                ['W', 1, 1, 1],
-                ['V', 1.5, 0, 1],
-                ['X', 2, 1, 1],
-                ['Y', 3.5, 1, 1],
-            ],
-        )
-
+        # create widgets
+        self.as_survival = self.create_widget(OWAsSurvivalData)
         self.widget = self.create_widget(OWKaplanMeier)
-        self.send_signal(self.widget.Inputs.data, test_data)
-        self.widget.time_var = self.widget.data.domain['Time']
-        self.widget.event_var = self.widget.data.domain['Event']
-        self.widget.on_controls_changed()
+
+        # handle survival data
+        self.send_signal(self.as_survival.Inputs.data, Table('./datasets/toy_example.tab'))
+        simulate.combobox_activate_item(self.as_survival.controls.time_var, self.as_survival._data.columns.Time.name)
+        simulate.combobox_activate_item(self.as_survival.controls.event_var, self.as_survival._data.columns.Event.name)
+        self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
+
+        # check survival data
+        self.assertIn(TIME_COLUMN, self.widget.data.attributes)
+        self.assertIn(EVENT_COLUMN, self.widget.data.attributes)
+
+        self.widget.auto_commit = True
 
         # If we don't do this function ViewBox.mapSceneToView fails with num py.linalg.LinAlgError: Singular matrix
         vb = self.widget.graph.getViewBox()
@@ -91,6 +76,13 @@ class TestOWKaplanMeier(WidgetTest):
 
         self.widget.graph.plotItem.scene().blockSignals(False)
 
+    def test_incorrect_input_data(self):
+        self.send_signal(self.widget.Inputs.data, Table('./datasets/toy_example.tab'))
+        self.assertTrue(self.widget.Error.missing_survival_data.is_shown())
+        self.assertIsNone(self.widget.data)
+        self.assertIsNone(self.widget.time_var)
+        self.assertIsNone(self.widget.event_var)
+
     def test_group_variable(self):
         # we expect only one curve
         self.assertTrue(len(self.widget.graph.curves) == 1)
@@ -101,7 +93,7 @@ class TestOWKaplanMeier(WidgetTest):
 
         # select group
         self.widget.group_var = self.widget.data.domain['Group']
-        self.widget.on_controls_changed()
+        self.widget.on_group_changed()
 
         # we expect three curves
         self.assertTrue(len(self.widget.graph.curves) == 2)
@@ -117,7 +109,7 @@ class TestOWKaplanMeier(WidgetTest):
         self.assertIn('All', legend)
 
         self.widget.group_var = self.widget.data.domain['Group']
-        self.widget.on_controls_changed()
+        self.widget.on_group_changed()
 
         legend = tuple(label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem))
         for group in self.widget.group_var.values:
@@ -125,7 +117,7 @@ class TestOWKaplanMeier(WidgetTest):
 
     def test_curve_highlight(self):
         self.widget.group_var = self.widget.data.domain['Group']
-        self.widget.on_controls_changed()
+        self.widget.on_group_changed()
 
         pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.5)).toPoint()
         mouse_move(self.widget.graph, pos)
@@ -166,7 +158,7 @@ class TestOWKaplanMeier(WidgetTest):
         self.assertIn(1, selected_groups)
 
         self.widget.group_var = self.widget.data.domain['Group']
-        self.widget.on_controls_changed()
+        self.widget.on_group_changed()
 
         self.widget.graph.legend.hide()
         self.simulate_mouse_drag((0.1, 1), (6, 1))
@@ -219,7 +211,7 @@ class TestOWKaplanMeier(WidgetTest):
 
     def test_median_value(self):
         self.widget.group_var = self.widget.data.domain['Group']
-        self.widget.on_controls_changed()
+        self.widget.on_group_changed()
 
         # check if X coordinates are correct
         self.assertEqual(3.0, self.widget.graph.curves[0].median_survival)
