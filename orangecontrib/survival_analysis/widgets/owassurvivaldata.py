@@ -6,7 +6,7 @@ from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.data import Table, Domain, ContinuousVariable, TimeVariable, StringVariable
 
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN, PROBLEM_TYPE
 
 
 class OWAsSurvivalData(OWWidget):
@@ -65,17 +65,21 @@ class OWAsSurvivalData(OWWidget):
         self.openContext(domain)
         self.commit.now()
 
-    def annotate(self, data: Table) -> Optional[Table]:
+    def as_survival_data(self, data: Table) -> Optional[Table]:
         if not self.time_var or not self.event_var or not data:
             return
 
+        metas = [meta for meta in data.domain.metas if meta not in (self.time_var, self.event_var)]
+        domain = Domain(data.domain.attributes, metas=metas, class_vars=[self.time_var, self.event_var])
+        data = data.transform(domain)
         data.attributes[TIME_COLUMN] = self.time_var
         data.attributes[EVENT_COLUMN] = self.event_var
+        data.attributes['problem_type'] = PROBLEM_TYPE
         return data
 
     @gui.deferred
     def commit(self) -> None:
-        self.Outputs.data.send(self.annotate(self._data))
+        self.Outputs.data.send(self.as_survival_data(self._data))
 
 
 if __name__ == "__main__":

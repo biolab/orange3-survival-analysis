@@ -6,6 +6,7 @@ from Orange.data import Table
 
 TIME_COLUMN = 'time_var'
 EVENT_COLUMN = 'event_var'
+PROBLEM_TYPE = 'time_to_event'
 
 
 def check_survival_data(f):
