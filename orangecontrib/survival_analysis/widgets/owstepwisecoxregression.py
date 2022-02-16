@@ -1,8 +1,7 @@
 import itertools
-import pandas as pd
 import numpy as np
 import pyqtgraph as pg
-from typing import Dict, List, Optional, NamedTuple, Tuple, Any
+from typing import Dict, List, Optional, NamedTuple, Any
 
 from AnyQt.QtGui import QColor
 from AnyQt.QtCore import Qt, QPointF, pyqtSignal as Signal
@@ -11,10 +10,9 @@ from Orange.widgets import gui
 from Orange.widgets.settings import Setting, SettingProvider
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
 from Orange.widgets.widget import Input, Output, OWWidget
-from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable
-from Orange.data.pandas_compat import table_to_frame
+from Orange.data import Table, Domain
 
-from orangecontrib.survival_analysis.widgets.owcoxregression import CoxRegressionLearner, CoxRegressionModel
+from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
 from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
 
 
@@ -81,41 +79,37 @@ class StepwiseCoxRegressionPlot(gui.OWComponent, pg.PlotWidget):
 class Result(NamedTuple):
     log2p: int
     model: CoxRegressionModel
-    removed_covariates: list
 
 
-def worker(df: pd.DataFrame, learner, initial_covariates: set, time_var: str, event_var: str, state: TaskState):
-    progress_steps = iter(np.linspace(0, 100, len(initial_covariates)))
+def worker(data: Table, learner, state: TaskState):
+    # No need to check for irregularities, this is done in widget
+    time_var = data.attributes[TIME_COLUMN]
+    event_var = data.attributes[EVENT_COLUMN]
 
-    def fit_cox_models(remaining_covariates: set, combinations_to_check: List[Tuple[str, ...]]):
+    def fit_cox_models(attrs_combinations):
         results = []
-        for covariates in combinations_to_check:
-            cph_model = learner(df[[time_var, event_var] + list(covariates)], time_var, event_var)
+        for attrs in attrs_combinations:
+            columns = attrs + [time_var, event_var]
+            cph_model = learner(data[:, columns])
             log2p = cph_model.ll_ratio_log2p()
-            result = Result(log2p, cph_model, [cov for cov in remaining_covariates - set(covariates)])
+            result = Result(log2p, cph_model)
             results.append(result)
         return results
 
-    removed_covariates = set()
-    _trace = fit_cox_models(initial_covariates, [tuple(initial_covariates)])
-    while True:
-        covariates_to_eval = initial_covariates - removed_covariates
+    attributes = [attr for attr in data.domain.attributes]
+    progress_steps = iter(np.linspace(0, 100, len(attributes)))
+    _trace = fit_cox_models([attributes])
+    while len(_trace) != len(data.domain.attributes):
+        attributes = [attr for attr in _trace[-1].model.domain.attributes]
 
-        if len(covariates_to_eval) > 1:
-            combinations = list(itertools.combinations(covariates_to_eval, len(covariates_to_eval) - 1))
+        if len(attributes) > 1:
+            combinations = [list(comb) for comb in itertools.combinations(attributes, len(attributes) - 1)]
         else:
-            combinations = [tuple(covariates_to_eval)]
+            combinations = [attributes]
 
-        results = fit_cox_models(covariates_to_eval, combinations)
-
-        best_result = max(results, key=lambda result: result.log2p)
-        if not best_result.removed_covariates:
-            break
-
-        _trace.append(best_result)
-        removed_covariates.update(set(best_result.removed_covariates))
+        results = fit_cox_models(combinations)
+        _trace.append(max(results, key=lambda result: result.log2p))
         state.set_progress_value(next(progress_steps))
-
     return _trace
 
 
@@ -143,11 +137,7 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
 
         self.learner: Optional[CoxRegressionLearner] = CoxRegressionLearner()
         self.data: Optional[Table] = None
-        self.data_df: Optional[pd.DataFrame] = None
-        self.attr_name_to_variable: Optional[dict] = None
         self.trace: Optional[List[Result]] = None
-        self.time_var = None
-        self.event_var = None
         gui.rubber(self.controlArea)
 
         self.graph: StepwiseCoxRegressionPlot = StepwiseCoxRegressionPlot(parent=self)
@@ -159,7 +149,7 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
         self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
 
     @Inputs.learner
-    def set_learner(self, learner: CoxRegressionLearner):
+    def set_learner(self, learner: CoxRegressionLearner()):
         if learner:
             self.learner = learner
         else:
@@ -172,25 +162,15 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
     def set_data(self, data: Table):
         if not data:
             return
-
         self.data = data
-        self.time_var = self.data.attributes[TIME_COLUMN].name
-        self.event_var = self.data.attributes[EVENT_COLUMN].name
-        self.attr_name_to_variable = {attr.name: attr for attr in self.data.domain.attributes}
-        self.data_df = table_to_frame(data, include_metas=True)
-        self.data_df = self.data_df.astype({self.event_var: np.float64})
-
         self.invalidate()
 
     def invalidate(self):
-        if self.time_var and self.event_var:
+        if self.data:
             self.start(
                 worker,
-                self.data_df,
+                self.data,
                 self.learner,
-                set(self.attr_name_to_variable.keys()),
-                self.time_var,
-                self.event_var,
             )
 
     def on_selection_changed(self, selection_line):
@@ -199,7 +179,15 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
 
     def commit(self):
         if self.current_x:
-            self.Outputs.selected_data.send(self.stratify_data(self.trace[self.current_x - 1]))
+            result: Result = self.trace[self.current_x - 1]
+
+            domain = Domain(
+                result.model.domain.attributes,
+                result.model.domain.class_vars,
+                self.data.domain.metas,
+            )
+            data = self.data.transform(domain)
+            self.Outputs.selected_data.send(data)
 
     def on_done(self, trace):
         # save results
@@ -219,32 +207,6 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
     def on_partial_result(self, result: Any) -> None:
         pass
 
-    def stratify_data(self, result: Result) -> Table:
-        model = result.model
-
-        domain = Domain(
-            [self.attr_name_to_variable[covariate] for covariate in model.covariates],
-            self.data.domain.class_var,
-            self.data.domain.metas,
-        )
-        data = self.data.transform(domain)
-
-        risk_score_label = 'Risk Score'
-        risk_group_label = 'Risk Group'
-        risk_score_var = ContinuousVariable(risk_score_label)
-        risk_group_var = DiscreteVariable(risk_group_label, values=['Low Risk', 'High Risk'])
-
-        risk_scores = model.predict(data.X)
-        risk_groups = (risk_scores > np.median(risk_scores)).astype(int)
-
-        domain = Domain(
-            data.domain.attributes, data.domain.class_var, data.domain.metas + (risk_score_var, risk_group_var)
-        )
-        stratified_data = data.transform(domain)
-        stratified_data[:, risk_score_var] = np.reshape(risk_scores, (-1, 1))
-        stratified_data[:, risk_group_var] = np.reshape(risk_groups, (-1, 1))
-        return stratified_data
-
     def send_report(self):
         if self.data is None:
             return
@@ -254,4 +216,11 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
 if __name__ == "__main__":
     from orangewidget.utils.widgetpreview import WidgetPreview
 
-    WidgetPreview(OWStepwiseCoxRegression).run(Table('test_data3.tab'))
+    table = Table('http://datasets.biolab.si/core/melanoma.tab')
+    table.attributes['time_var'] = table.domain['time']
+    table.attributes['event_var'] = table.domain['event']
+    table.attributes['problem_type'] = 'time_to_event'
+    metas = [meta for meta in table.domain.metas if meta not in (table.domain['time'], table.domain['event'])]
+    domain = Domain(table.domain.attributes, metas=metas, class_vars=[table.domain['time'], table.domain['event']])
+    table = table.transform(domain)
+    WidgetPreview(OWStepwiseCoxRegression).run(input_data=table)

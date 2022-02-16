@@ -1,73 +1,17 @@
-import numpy as np
-import pandas as pd
-from typing import Optional
 from itertools import chain
-
-from lifelines import CoxPHFitter
 
 from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QLayout, QSizePolicy
 
 from Orange.data import StringVariable
-from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable
-from Orange.data.pandas_compat import table_to_frame
+from Orange.data import Table, Domain, ContinuousVariable
 from Orange.widgets import settings, gui
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.utils.signals import Output
 
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
-
-
-class CoxRegressionModel:
-    def __init__(self, model):
-        self._model = model
-        self.params = vars()
-
-    @property
-    def covariates(self):
-        return self._model.summary.index.to_list()
-
-    @property
-    def coefficients(self):
-        return self._model.summary.coef.to_list()
-
-    def ll_ratio_log2p(self):
-        """return -log2p from log-likelihood ratio test"""
-        return -np.log2(self._model.log_likelihood_ratio_test().p_value)
-
-    def predict(self, X):
-        """Predict risk scores."""
-        return X.dot(self.coefficients)
-
-
-class CoxRegressionLearner:
-    __returns__ = CoxRegressionModel
-
-    def __init__(self, *args, **kwargs):
-        self.params = vars()
-        self.time_var: Optional[str] = None
-        self.event_var: Optional[str] = None
-
-    def fit(self, df):
-        cph = CoxPHFitter(*self.params['args'], **self.params['kwargs'])
-        cph = cph.fit(df, duration_col=self.time_var, event_col=self.event_var)
-        return CoxRegressionModel(cph)
-
-    def __call__(self, data: Table, time_var=None, event_var=None):
-        if isinstance(data, Table):
-            df = table_to_frame(data, include_metas=True)
-            self.time_var = data.attributes[TIME_COLUMN].name
-            self.event_var = data.attributes[EVENT_COLUMN].name
-            df = df[[self.time_var, self.event_var] + [attr.name for attr in data.domain.attributes]]
-        elif isinstance(data, pd.DataFrame):
-            self.time_var = time_var
-            self.event_var = event_var
-            df = data
-        else:
-            raise ValueError('Wrong data type')
-
-        return self.fit(df)
+from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner
+from orangecontrib.survival_analysis.widgets.data import check_survival_data
 
 
 class OWCoxRegression(OWBaseLearner):
@@ -82,7 +26,6 @@ class OWCoxRegression(OWBaseLearner):
     LEARNER = CoxRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        data = Output('Stratified data', Table, explicit=True)
         coefficients = Output('Coefficients', Table, explicit=True)
 
     class Inputs(OWBaseLearner.Inputs):
@@ -94,10 +37,10 @@ class OWCoxRegression(OWBaseLearner):
         'Lasso regression (L1)',
         'Elastic net regression',
     ]
-    OLS, Ridge, Lasso, Elastic = 0, 1, 2, 3
+    COX, Ridge, Lasso, Elastic = 0, 1, 2, 3
 
     ridge = settings.Setting(False)
-    reg_type = settings.Setting(OLS)
+    reg_type = settings.Setting(COX)
     alpha_index: int
     alpha_index = settings.Setting(0)
     l2_ratio: int
@@ -164,7 +107,7 @@ class OWCoxRegression(OWBaseLearner):
         box5.layout().setAlignment(Qt.AlignCenter)
         self._set_l2_ratio_label()
         self.layout().setSizeConstraint(QLayout.SetFixedSize)
-        self.controls.alpha_index.setEnabled(self.reg_type != self.OLS)
+        self.controls.alpha_index.setEnabled(self.reg_type != self.COX)
         self.l2_ratio_slider.setEnabled(self.reg_type == self.Elastic)
 
     @Inputs.data
@@ -176,21 +119,24 @@ class OWCoxRegression(OWBaseLearner):
         self.update_model()
 
     def check_data(self):
-        # TODO
-        pass
+        self.valid_data = False
+        self.Error.sparse_not_supported.clear()
+        if self.data is not None and self.learner is not None:
+            self.Error.data_error.clear()
+            if not self.learner.check_learner_adequacy(self.data.domain):
+                self.Error.data_error(self.learner.learner_adequacy_err_msg)
+            elif not len(self.data):
+                self.Error.data_error("Dataset is empty.")
+            elif self.data.X.size == 0:
+                self.Error.data_error("Data has no features to learn from.")
+            elif self.data.is_sparse() and not self.supports_sparse:
+                self.Error.sparse_not_supported()
+            else:
+                self.valid_data = True
+        return self.valid_data
 
     def update_model(self):
-        self.show_fitting_failed(None)
-        self.model = None
-        stratified_data = None
-
-        try:
-            if self.data:
-                self.model: CoxRegressionModel = self.learner(self.data)
-        except BaseException as exc:
-            self.show_fitting_failed(exc)
-
-        self.Outputs.model.send(self.model)
+        super().update_model()
         if self.model is not None:
             # create coefficients table
             domain = Domain([ContinuousVariable('coef')], metas=[StringVariable('covariate')])
@@ -198,30 +144,10 @@ class OWCoxRegression(OWBaseLearner):
             coef_table.name = 'coefficients'
             self.Outputs.coefficients.send(coef_table)
 
-            # stratify output data based on predicted risk scores
-            risk_score_label = 'Risk Score'
-            risk_group_label = 'Risk Group'
-            risk_score_var = ContinuousVariable(risk_score_label)
-            risk_group_var = DiscreteVariable(risk_group_label, values=['Low Risk', 'High Risk'])
-
-            risk_scores = self.model.predict(self.data.X)
-            risk_groups = (risk_scores > np.median(risk_scores)).astype(int)
-
-            domain = Domain(
-                self.data.domain.attributes,
-                self.data.domain.class_var,
-                self.data.domain.metas + (risk_score_var, risk_group_var),
-            )
-            stratified_data = self.data.transform(domain)
-            stratified_data[:, risk_score_var] = np.reshape(risk_scores, (-1, 1))
-            stratified_data[:, risk_group_var] = np.reshape(risk_groups, (-1, 1))
-
-        self.Outputs.data.send(stratified_data)
-
     def create_learner(self):
         alpha = self.alphas[self.alpha_index]
 
-        if self.reg_type == OWCoxRegression.OLS:
+        if self.reg_type == OWCoxRegression.COX:
             learner = CoxRegressionLearner()
         elif self.reg_type == OWCoxRegression.Ridge:
             learner = CoxRegressionLearner(penalizer=alpha, l1_ratio=0)
@@ -236,7 +162,7 @@ class OWCoxRegression(OWBaseLearner):
         self.apply()
 
     def _reg_type_changed(self):
-        self.controls.alpha_index.setEnabled(self.reg_type != self.OLS)
+        self.controls.alpha_index.setEnabled(self.reg_type != self.COX)
         self.l2_ratio_slider.setEnabled(self.reg_type == self.Elastic)
         self.apply()
 
@@ -271,4 +197,8 @@ if __name__ == "__main__":
     table = Table('http://datasets.biolab.si/core/melanoma.tab')
     table.attributes['time_var'] = table.domain['time']
     table.attributes['event_var'] = table.domain['event']
+    table.attributes['problem_tye'] = 'time_to_event'
+    metas = [meta for meta in table.domain.metas if meta not in (table.domain['time'], table.domain['event'])]
+    domain = Domain(table.domain.attributes, metas=metas, class_vars=[table.domain['time'], table.domain['event']])
+    table = table.transform(domain)
     WidgetPreview(OWCoxRegression).run(input_data=table)

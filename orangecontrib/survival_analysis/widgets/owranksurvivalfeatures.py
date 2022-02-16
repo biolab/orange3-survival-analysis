@@ -43,11 +43,14 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
         _queue = _manager.Queue()
         _cpu_count = cpu_count()
 
-        df = table_to_frame(table, include_metas=True)
+        df = table_to_frame(table, include_metas=False)
         df = df.astype({event_var: np.float64})
-        batches = [
-            df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
-        ]
+        if len(covariates) > 50:
+            batches = [
+                df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
+            ]
+        else:
+            batches = [df[[time_var, event_var] + [cov]] for cov in covariates]
         progress_steps = iter(np.linspace(0, 100, len(covariates)))
 
         with multiprocessing.Pool(processes=_cpu_count) as pool:
@@ -194,7 +197,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
             self.Outputs.reduced_data.send(None)
             self.Outputs.stratified_data.send(None)
         else:
-            reduced_domain = Domain(self.selected_attrs, self.data.domain.class_var, self.data.domain.metas)
+            reduced_domain = Domain(self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas)
             data = self.data.transform(reduced_domain)
             self.Outputs.reduced_data.send(data)
 
