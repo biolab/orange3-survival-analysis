@@ -89,7 +89,7 @@ def worker(data: Table, learner, state: TaskState):
     def fit_cox_models(attrs_combinations):
         results = []
         for attrs in attrs_combinations:
-            columns = attrs + [time_var, event_var]
+            columns = attrs + [time_var.name, event_var.name]
             cph_model = learner(data[:, columns])
             log2p = cph_model.ll_ratio_log2p()
             result = Result(log2p, cph_model)
