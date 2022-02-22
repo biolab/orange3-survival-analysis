@@ -1,5 +1,6 @@
 import numpy as np
 import multiprocessing
+import queue
 from multiprocessing import cpu_count
 from functools import partial
 from typing import Any, Optional, List
@@ -34,7 +35,6 @@ def batch_to_process(queue, time_var, event_var, df):
         # log-likelihood ratio test
         ll_ratio_test = model.log_likelihood_ratio_test()
         batch_results.append((covariate, cph.log_likelihood_, ll_ratio_test.test_statistic, ll_ratio_test.p_value))
-
     return np.array(batch_results)
 
 
@@ -46,11 +46,11 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
         df = table_to_frame(table, include_metas=False)
         df = df.astype({event_var: np.float64})
         if len(covariates) > 50:
-            batches = [
+            batches = (
                 df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
-            ]
+            )
         else:
-            batches = [df[[time_var, event_var] + [cov]] for cov in covariates]
+            batches = (df[[time_var, event_var] + [cov]] for cov in covariates)
         progress_steps = iter(np.linspace(0, 100, len(covariates)))
 
         with multiprocessing.Pool(processes=_cpu_count) as pool:
@@ -63,12 +63,13 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
                 ),
                 batches,
             )
+
             while True:
                 try:
                     state.set_progress_value(next(progress_steps))
-                except StopIteration:
+                    _queue.get(timeout=3)
+                except (queue.Empty, StopIteration):
                     break
-                _queue.get()
 
             stacked_result = np.vstack(results.get())
             covariate_names = stacked_result[:, 0]
@@ -195,7 +196,6 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     def commit(self):
         if not self.selected_attrs:
             self.Outputs.reduced_data.send(None)
-            self.Outputs.stratified_data.send(None)
         else:
             reduced_domain = Domain(self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas)
             data = self.data.transform(reduced_domain)
