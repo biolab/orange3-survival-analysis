@@ -36,7 +36,7 @@ class CoxRegressionModel(Model):
 class CoxRegressionLearner(Learner):
     __returns__ = CoxRegressionModel
     supports_multiclass = True
-    learner_adequacy_err_msg = 'Survival variables expected.'
+    learner_adequacy_err_msg = 'Survival variables expected.  Use As Survival Data widget.'
 
     def __init__(self, preprocessors=None, **kwargs):
         self.params = vars()
@@ -55,9 +55,19 @@ class CoxRegressionLearner(Learner):
             return self.fit(data)
 
     def fit(self, data):
+        if not all(
+            annotation in data.attributes
+            for annotation in (
+                TIME_COLUMN,
+                EVENT_COLUMN,
+                'problem_type',
+            )
+        ):
+            raise ValueError(self.learner_adequacy_err_msg)
+        time_var = data.attributes[TIME_COLUMN]
+        event_var = data.attributes[EVENT_COLUMN]
+
         df = table_to_frame(data, include_metas=False)
-        time_var = data.attributes.get(TIME_COLUMN)
-        event_var = data.attributes.get(EVENT_COLUMN)
         cph = CoxPHFitter(**self.params['kwargs'])
         cph = cph.fit(df, duration_col=time_var.name, event_col=event_var.name)
         return CoxRegressionModel(cph)
