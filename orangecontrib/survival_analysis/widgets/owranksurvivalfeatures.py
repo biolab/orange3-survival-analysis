@@ -4,22 +4,23 @@ from multiprocessing import cpu_count
 from functools import partial
 from typing import Any, Optional, List
 
+from lifelines import CoxPHFitter
+from statsmodels.stats.multitest import fdrcorrection
+
 from AnyQt.QtWidgets import QButtonGroup, QGridLayout, QRadioButton, QAbstractScrollArea
 from AnyQt.QtCore import Qt, QItemSelection, QItemSelectionModel, QItemSelectionRange
 
 from Orange.widgets import gui
 from Orange.widgets.settings import ContextSetting, DomainContextHandler, Setting
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
-from Orange.widgets.utils.itemmodels import PyTableModel, DomainModel
+from Orange.widgets.utils.itemmodels import PyTableModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, OWWidget
-from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable
+from Orange.data import Table, Domain
 from Orange.data.pandas_compat import table_to_frame
 from Orange.widgets.data.owrank import TableView
 
-
-from lifelines import CoxPHFitter
-from statsmodels.stats.multitest import fdrcorrection
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
 
 
 def batch_to_process(queue, time_var, event_var, df):
@@ -42,11 +43,14 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
         _queue = _manager.Queue()
         _cpu_count = cpu_count()
 
-        df = table_to_frame(table, include_metas=True)
+        df = table_to_frame(table, include_metas=False)
         df = df.astype({event_var: np.float64})
-        batches = [
-            df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
-        ]
+        if len(covariates) > 50:
+            batches = [
+                df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
+            ]
+        else:
+            batches = [df[[time_var, event_var] + [cov]] for cov in covariates]
         progress_steps = iter(np.linspace(0, 100, len(covariates)))
 
         with multiprocessing.Pool(processes=_cpu_count) as pool:
@@ -78,17 +82,17 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     name = 'Rank Survival Features'
     # TODO: Add widget metadata
     description = ''
-    icon = ''
+    icon = 'icons/owranksurvivalfeatures.svg'
+    priority = 30
     keywords = []
 
     buttons_area_orientation = Qt.Vertical
     select_none, manual_selection, select_n_best = range(3)
-    settingsHandler = DomainContextHandler()
 
-    selection_method = ContextSetting(select_n_best)
-    n_selected = ContextSetting(20)
-    time_var = ContextSetting(None)
+    settingsHandler = DomainContextHandler()
     selected_attrs = ContextSetting([], schema_only=True)
+    selection_method = Setting(select_n_best, schema_only=True)
+    n_selected = Setting(20, schema_only=True)
     auto_commit: bool = Setting(False, schema_only=True)
 
     class Inputs:
@@ -96,7 +100,6 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
 
     class Outputs:
         reduced_data = Output('Reduced Data', Table, default=True)
-        stratified_data = Output('Stratified Data', Table)
 
     def __init__(self):
         OWWidget.__init__(self)
@@ -105,10 +108,8 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.data: Optional[Table] = None
         self.attr_name_to_variable: Optional[Table] = None
         self.covariates_from_worker_result = None
-
-        time_var_model = DomainModel(valid_types=(ContinuousVariable,), order=(4,))
-        box = gui.vBox(self.controlArea, 'Time', margin=0)
-        gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.on_controls_changed)
+        self.time_var: Optional[str] = None
+        self.event_var: Optional[str] = None
 
         gui.rubber(self.controlArea)
 
@@ -172,6 +173,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         return [attr.name for attr in self.data.domain.attributes]
 
     @Inputs.data
+    @check_survival_data
     def set_data(self, data: Table):
         self.closeContext()
         self.selected_attrs = []
@@ -185,44 +187,19 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.data = data
         self.attr_name_to_variable = {attr.name: attr for attr in self.data.domain.attributes}
 
-        self.controls.time_var.model().set_domain(self.data.domain)
-        self.time_var = None
         self.openContext(data)
-        self.on_controls_changed()
-
-    def on_controls_changed(self):
-        if self.time_var:
-            self.start(worker, self.data, self.covariates, self.time_var.name, self.data.domain.class_var.name)
-
-    def stratify_data(self, data: Table):
-        df = table_to_frame(data, include_metas=True)
-        time = self.time_var.name
-        event = self.data.domain.class_var.name
-        covariates = [attr.name for attr in data.domain.attributes]
-        risk_score_label = 'Risk Score'
-        risk_score_var = ContinuousVariable(risk_score_label)
-        risk_group_label = 'Risk Group'
-        risk_group_var = DiscreteVariable(risk_group_label, values=['Low Risk', 'High Risk'])
-
-        cph = CoxPHFitter().fit(df[[time, event] + covariates], duration_col=time, event_col=event)
-        df[risk_score_label] = df[covariates].dot(cph.summary['coef'])
-        df[risk_group_label] = (df[risk_score_label] >= df[risk_score_label].median()).astype(int)
-
-        domain = Domain([risk_score_var, risk_group_var], self.data.domain.class_var, self.data.domain.metas)
-        data = data.transform(domain)
-        data[:, risk_score_var] = np.reshape(df[risk_score_label].to_numpy(), (-1, 1))
-        data[:, risk_group_var] = np.reshape(df[risk_group_label].to_numpy(), (-1, 1))
-        return data
+        self.time_var = self.data.attributes[TIME_COLUMN].name
+        self.event_var = self.data.attributes[EVENT_COLUMN].name
+        self.start(worker, self.data, self.covariates, self.time_var, self.event_var)
 
     def commit(self):
         if not self.selected_attrs:
             self.Outputs.reduced_data.send(None)
             self.Outputs.stratified_data.send(None)
         else:
-            reduced_domain = Domain(self.selected_attrs, self.data.domain.class_var, self.data.domain.metas)
+            reduced_domain = Domain(self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas)
             data = self.data.transform(reduced_domain)
             self.Outputs.reduced_data.send(data)
-            self.Outputs.stratified_data.send(self.stratify_data(data))
 
     def on_done(self, worker_result):
         covariate_names, results = worker_result
@@ -235,7 +212,6 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
 
         # match covariate names to domain variables and set vertical header
         self.model.setVerticalHeaderLabels([self.attr_name_to_variable[name] for name in covariate_names])
-        self.table_view.setVHeaderFixedWidthFromLabel(max((a.name for a in self.data.domain.attributes), key=len))
         self.table_view.resizeColumnsToContents()
 
         self.auto_select()

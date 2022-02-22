@@ -15,7 +15,7 @@ from lifelines import KaplanMeierFitter
 from lifelines.utils import median_survival_times, format_p_value
 from lifelines.statistics import multivariate_logrank_test
 
-from Orange.data import Table, Domain, DiscreteVariable, ContinuousVariable, TimeVariable
+from Orange.data import Table, DiscreteVariable
 from Orange.widgets import gui
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
 from Orange.widgets.settings import (
@@ -28,6 +28,9 @@ from Orange.widgets.utils.plot import SELECT, PANNING, ZOOMING, OWPlotGUI
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.data.filter import IsDefined
+
+
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
 
 
 MEDIAN_LINE_PEN_STYLE = {'color': QColor(Qt.darkGray), 'width': 1, 'style': Qt.DashLine}
@@ -266,7 +269,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend.restoreAnchor(((1, 0), (1, 0)))
         self.legend.hide()
 
-        self.setLabels(left='Survival Probability', bottom=self.parent.time_var_label)
+        self.setLabels(left='Survival Probability', bottom=self.parent.time_var_name)
 
     def mouseMovedEvent(self, ev):
         pos = self.view_box.mapSceneToView(ev[0])
@@ -404,7 +407,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
         self.set_selection()
         self.update_legend()
-        self.setLabels(bottom=self.parent.time_var_label)
+        self.setLabels(bottom=self.parent.time_var_name)
 
     def update_legend(self):
         self.legend.hide()
@@ -440,7 +443,7 @@ class OWKaplanMeier(OWWidget):
     name = 'Kaplan-Meier Plot'
     description = 'Plot the Kaplan-Meier estimate.'
     icon = 'icons/owkaplanmeier.svg'
-    priority = 0
+    priority = 10
 
     show_confidence_interval: bool
     show_confidence_interval = Setting(False)
@@ -452,8 +455,6 @@ class OWKaplanMeier(OWWidget):
     show_censored_data = Setting(False)
 
     settingsHandler = DomainContextHandler()
-    time_var = ContextSetting(None, schema_only=True)
-    event_var = ContextSetting(None, schema_only=True)
     group_var: Optional[DiscreteVariable] = ContextSetting(None, schema_only=True)
 
     graph = SettingProvider(KaplanMeierPlot)
@@ -478,18 +479,10 @@ class OWKaplanMeier(OWWidget):
         self.plot_curves = None
         self.log_rank_test = None
 
-        time_var_model = DomainModel(valid_types=(ContinuousVariable,))
-        event_var_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
         group_var_model = DomainModel(placeholder='(None)', valid_types=(DiscreteVariable,))
 
-        box = gui.vBox(self.controlArea, 'Time', margin=0)
-        gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.on_controls_changed)
-
-        box = gui.vBox(self.controlArea, 'Event', margin=0)
-        gui.comboBox(box, self, 'event_var', model=event_var_model, callback=self.on_controls_changed)
-
         box = gui.vBox(self.controlArea, 'Group', margin=0)
-        gui.comboBox(box, self, 'group_var', model=group_var_model, callback=self.on_controls_changed)
+        gui.comboBox(box, self, 'group_var', model=group_var_model, callback=self.on_group_changed)
 
         box = gui.vBox(self.controlArea, 'Display options')
         gui.checkBox(
@@ -517,7 +510,7 @@ class OWKaplanMeier(OWWidget):
         )
 
         self.graph: KaplanMeierPlot = KaplanMeierPlot(parent=self)
-        self.graph.selection_changed.connect(self.commit)
+        self.graph.selection_changed.connect(self.commit.deferred)
         self.mainArea.layout().addWidget(self.graph)
 
         plot_gui = OWPlotGUI(self)
@@ -527,44 +520,42 @@ class OWKaplanMeier(OWWidget):
 
         self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
 
-    @Inputs.data
-    def set_data(self, data: Table):
-        self.closeContext()
-        if not data:
+    @property
+    def time_var(self):
+        if not self.data:
             return
-
-        def _filter_domain_model_options(_domain):
-            vars_ = [var for var in _domain.variables + _domain.metas if not isinstance(var, TimeVariable)]
-            vars_ = [
-                var
-                for var in vars_
-                if isinstance(var, ContinuousVariable) or isinstance(var, DiscreteVariable) and len(var.values) <= 2
-            ]
-
-            return Domain(vars_)
-
-        self.data = data
-        domain = _filter_domain_model_options(data.domain)
-        self.controls.time_var.model().set_domain(domain)
-        self.controls.event_var.model().set_domain(domain)
-        self.controls.group_var.model().set_domain(data.domain)
-
-        self.time_var = None
-        self.event_var = None
-        self.group_var = None
-        self.graph.selection = {}
-        self.openContext(data.domain)
-
-        self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
-        self.graph.update_plot(**self._get_plot_options())
-        self.commit()
+        return self.data.attributes[TIME_COLUMN]
 
     @property
-    def time_var_label(self):
+    def event_var(self):
+        if not self.data:
+            return
+        return self.data.attributes[EVENT_COLUMN]
+
+    @property
+    def time_var_name(self):
         if not self.time_var:
             return 'Time'
 
         return self.time_var.name
+
+    @Inputs.data
+    @check_survival_data
+    def set_data(self, data: Table):
+        self.closeContext()
+
+        domain = data.domain if data else None
+        self.data = data
+        self.controls.group_var.model().set_domain(domain)
+
+        self.group_var = None
+        self.graph.selection = {}
+        self.openContext(domain)
+
+        self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
+        self.graph.update_plot(**self._get_plot_options())
+
+        self.commit.now()
 
     def _get_plot_options(self):
         return {
@@ -576,14 +567,14 @@ class OWKaplanMeier(OWWidget):
     def on_display_option_changed(self) -> None:
         self.graph.update_plot(**self._get_plot_options())
 
-    def on_controls_changed(self):
+    def on_group_changed(self):
         if not self.data:
             return
 
         self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
         self.graph.clear_selection()
         self.graph.update_plot(**self._get_plot_options())
-        self.commit()
+        self.commit.now()
 
     def _get_discrete_var_color(self, index: Optional[int]):
         if self.group_var is not None and index is not None:
@@ -625,6 +616,7 @@ class OWKaplanMeier(OWWidget):
         else:
             return [EstimatedFunctionCurve(time, events)]
 
+    @gui.deferred
     def commit(self):
         if not self.graph.selection:
             self.Outputs.selected_data.send(None)
@@ -661,4 +653,7 @@ class OWKaplanMeier(OWWidget):
 if __name__ == "__main__":
     from orangewidget.utils.widgetpreview import WidgetPreview
 
-    WidgetPreview(OWKaplanMeier).run(Table('iris'))
+    table = Table('http://datasets.biolab.si/core/melanoma.tab')
+    table.attributes['time_var'] = table.domain['time']
+    table.attributes['event_var'] = table.domain['event']
+    WidgetPreview(OWKaplanMeier).run(input_data=table)
