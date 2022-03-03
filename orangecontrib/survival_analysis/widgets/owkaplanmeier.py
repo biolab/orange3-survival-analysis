@@ -17,7 +17,7 @@ from lifelines.statistics import multivariate_logrank_test
 
 from Orange.data import Table, DiscreteVariable
 from Orange.widgets import gui
-from Orange.widgets.widget import Input, Output, OWWidget, Msg
+from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.settings import (
     Setting,
     ContextSetting,
@@ -468,14 +468,10 @@ class OWKaplanMeier(OWWidget):
     class Outputs:
         selected_data = Output('Data', Table)
 
-    class Warning(OWWidget.Warning):
-        missing_values = Msg('Rows with missing values were omitted.')
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data: Optional[Table] = None
-        self._data: Optional[Table] = None
         self.plot_curves = None
         self.log_rank_test = None
 
@@ -545,9 +541,13 @@ class OWKaplanMeier(OWWidget):
         self.closeContext()
 
         domain = data.domain if data else None
-        self.data = data
-        self.controls.group_var.model().set_domain(domain)
+        if data and data.has_missing():
+            filter_ = IsDefined(columns=data.domain.class_vars)
+            self.data = filter_(data)
+        else:
+            self.data = data
 
+        self.controls.group_var.model().set_domain(domain)
         self.group_var = None
         self.graph.selection = {}
         self.openContext(domain)
@@ -582,19 +582,9 @@ class OWKaplanMeier(OWWidget):
 
     def generate_plot_curves(self) -> List[EstimatedFunctionCurve]:
         self._data = None
-        self.Warning.missing_values.clear()
 
         if self.time_var is None or self.event_var is None:
             return []
-
-        filter_ = IsDefined(columns=[self.time_var, self.event_var])
-
-        # if undefined values are detected in time_var or event_var omit rows with undefined values
-        self._data = filter_(self.data)
-        if len(self.data) == len(self._data):
-            self._data = None
-        else:
-            self.Warning.missing_values()
 
         data = self.data if self._data is None else self._data
         time, _ = data.get_column_view(self.time_var)

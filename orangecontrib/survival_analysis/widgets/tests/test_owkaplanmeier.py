@@ -54,8 +54,14 @@ class TestOWKaplanMeier(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
 
         # check survival data
-        self.assertIn(TIME_COLUMN, self.widget.data.attributes)
-        self.assertIn(EVENT_COLUMN, self.widget.data.attributes)
+        data_attrs = self.widget.data.attributes
+        self.assertIn(TIME_COLUMN, data_attrs)
+        self.assertIn(EVENT_COLUMN, data_attrs)
+        self.assertIn(self.widget.data.domain[data_attrs[TIME_COLUMN]], self.widget.data.domain.class_vars)
+        self.assertIn(self.widget.data.domain[data_attrs[EVENT_COLUMN]], self.widget.data.domain.class_vars)
+
+        # check if missing data detected
+        self.assertTrue(self.widget.Warning.missing_values_detected.is_shown())
 
         self.widget.auto_commit = True
 
