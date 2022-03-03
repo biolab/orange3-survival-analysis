@@ -68,6 +68,9 @@ class CoxRegressionLearner(Learner):
         event_var = data.attributes[EVENT_COLUMN]
 
         df = table_to_frame(data, include_metas=False)
+        df = df.dropna(axis=0)
+        df[time_var.name] = df[time_var.name].astype(float)
+        df[event_var.name] = df[event_var.name].astype(float)
         cph = CoxPHFitter(**self.params['kwargs'])
         cph = cph.fit(df, duration_col=time_var.name, event_col=event_var.name)
         return CoxRegressionModel(cph)
