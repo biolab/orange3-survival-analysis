@@ -4,7 +4,7 @@ from Orange.widgets import gui
 from Orange.widgets.settings import Setting, ContextSetting, DomainContextHandler
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.utils.itemmodels import DomainModel
-from Orange.data import Table, Domain, ContinuousVariable, TimeVariable, StringVariable
+from Orange.data import Table, Domain, ContinuousVariable, TimeVariable, StringVariable, DiscreteVariable
 
 from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN, PROBLEM_TYPE
 
@@ -33,7 +33,7 @@ class OWAsSurvivalData(OWWidget):
         self._data: Optional[Table] = None
 
         time_var_model = DomainModel(valid_types=(ContinuousVariable,))
-        event_var_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
+        event_var_model = DomainModel(valid_types=(DiscreteVariable,))
 
         box = gui.vBox(self.controlArea, 'Time', margin=0)
         gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.commit.deferred, searchable=True)
@@ -53,8 +53,12 @@ class OWAsSurvivalData(OWWidget):
             # shallow copy data table and table attributes
             self._data = data.transform(data.domain)
             self._data.attributes = data.attributes.copy()
-            # look for survival data in meta attributes only.
-            vars_ = [var for var in data.domain.metas if not isinstance(var, (TimeVariable, StringVariable))]
+            # look for survival data in meta and class vars only.
+            vars_ = [
+                var
+                for var in data.domain.metas + data.domain.class_vars
+                if not isinstance(var, (TimeVariable, StringVariable))
+            ]
             domain = Domain(vars_)
 
         self.controls.time_var.model().set_domain(domain)

@@ -14,7 +14,7 @@ class TestOWAsSurvivalData(WidgetTest):
         self.widget = self.create_widget(OWAsSurvivalData)
         self.send_signal(self.widget.Inputs.data, Table(f'{test_data_path}/toy_example.tab'))
         self.assertEqual(self.widget.controls.time_var.count(), 1)
-        self.assertEqual(self.widget.controls.event_var.count(), 3)
+        self.assertEqual(self.widget.controls.event_var.count(), 2)
 
     def test_output_survival_data(self):
         simulate.combobox_activate_item(self.widget.controls.time_var, self.widget._data.columns.Time.name)
