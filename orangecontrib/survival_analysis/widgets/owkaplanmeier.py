@@ -15,7 +15,7 @@ from lifelines import KaplanMeierFitter
 from lifelines.utils import median_survival_times, format_p_value
 from lifelines.statistics import multivariate_logrank_test
 
-from Orange.data import Table, DiscreteVariable
+from Orange.data import Table, DiscreteVariable, Domain
 from Orange.widgets import gui
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.settings import (
@@ -540,15 +540,20 @@ class OWKaplanMeier(OWWidget):
     def set_data(self, data: Table):
         self.closeContext()
 
-        domain = data.domain if data else None
         if data and data.has_missing():
             filter_ = IsDefined(columns=data.domain.class_vars)
             self.data = filter_(data)
         else:
             self.data = data
 
+        # exclude class vars
+        domain = data.domain if data else None
+        if domain is not None:
+            domain = Domain(domain.attributes, metas=domain.metas)
+
         self.controls.group_var.model().set_domain(domain)
         self.group_var = None
+
         self.graph.selection = {}
         self.openContext(domain)
 
