@@ -64,8 +64,11 @@ class OWAsSurvivalData(OWWidget):
         self.controls.time_var.model().set_domain(domain)
         self.controls.event_var.model().set_domain(domain)
 
-        self.time_var = None
-        self.event_var = None
+        time_var_model = self.controls.time_var.model()
+        event_var_model = self.controls.event_var.model()
+
+        self.time_var = time_var_model[0] if len(time_var_model) else None
+        self.event_var = event_var_model[0] if len(event_var_model) else None
         self.openContext(domain)
         self.commit.now()
 
