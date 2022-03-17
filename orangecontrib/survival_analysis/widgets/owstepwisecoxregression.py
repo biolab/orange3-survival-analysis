@@ -13,7 +13,7 @@ from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain
 
 from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, get_survival_endpoints
 
 
 class CustomInfiniteLine(pg.InfiniteLine):
@@ -83,8 +83,7 @@ class Result(NamedTuple):
 
 def worker(data: Table, learner, state: TaskState):
     # No need to check for irregularities, this is done in widget
-    time_var = data.attributes[TIME_COLUMN]
-    event_var = data.attributes[EVENT_COLUMN]
+    time_var, event_var = get_survival_endpoints(data.domain)
 
     def fit_cox_models(attrs_combinations):
         results = []

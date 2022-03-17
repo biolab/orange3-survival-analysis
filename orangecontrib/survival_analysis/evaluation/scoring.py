@@ -1,7 +1,9 @@
 from lifelines.utils import concordance_index
 from Orange.data import DiscreteVariable, ContinuousVariable
 from Orange.evaluation.scoring import Score
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints
+
+__all__ = ['ConcordanceIndex']
 
 
 class SurvivalScorer(Score, abstract=True):
@@ -18,10 +20,8 @@ class ConcordanceIndex(SurvivalScorer):
     long_name = 'Concordance Index'
 
     def compute_score(self, results):
-        data = results.data
         domain = results.domain
-        time_var = data.attributes.get(TIME_COLUMN)
-        event_var = data.attributes.get(EVENT_COLUMN)
+        time_var, event_var = get_survival_endpoints(domain)
 
         c_index = concordance_index(
             results.actual[:, domain.class_vars.index(time_var)],

@@ -30,7 +30,10 @@ from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.data.filter import IsDefined
 
 
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import (
+    check_survival_data,
+    get_survival_endpoints,
+)
 
 
 MEDIAN_LINE_PEN_STYLE = {'color': QColor(Qt.darkGray), 'width': 1, 'style': Qt.DashLine}
@@ -520,13 +523,17 @@ class OWKaplanMeier(OWWidget):
     def time_var(self):
         if not self.data:
             return
-        return self.data.attributes[TIME_COLUMN]
+
+        time_var, _ = get_survival_endpoints(self.data.domain)
+        return time_var
 
     @property
     def event_var(self):
         if not self.data:
             return
-        return self.data.attributes[EVENT_COLUMN]
+
+        _, event_var = get_survival_endpoints(self.data.domain)
+        return event_var
 
     @property
     def time_var_name(self):

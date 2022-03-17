@@ -21,7 +21,7 @@ from Orange.data import Table, Domain
 from Orange.data.pandas_compat import table_to_frame
 from Orange.widgets.data.owrank import TableView
 
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import check_survival_data, get_survival_endpoints
 
 
 def batch_to_process(queue, time_var, event_var, df):
@@ -189,8 +189,8 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.attr_name_to_variable = {attr.name: attr for attr in self.data.domain.attributes}
 
         self.openContext(data)
-        self.time_var = self.data.attributes[TIME_COLUMN].name
-        self.event_var = self.data.attributes[EVENT_COLUMN].name
+        time_var, event_var = get_survival_endpoints(self.data.domain)
+        self.time_var, self.event_var = time_var.name, event_var.name
         self.start(worker, self.data, self.covariates, self.time_var, self.event_var)
 
     def commit(self):
