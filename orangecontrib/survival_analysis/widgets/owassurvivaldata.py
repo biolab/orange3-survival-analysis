@@ -6,7 +6,7 @@ from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.data import Table, Domain, ContinuousVariable, TimeVariable, StringVariable, DiscreteVariable
 
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN, PROBLEM_TYPE
+from orangecontrib.survival_analysis.widgets.data import TIME_VAR, EVENT_VAR, TIME_TO_EVENT_VAR
 
 
 class OWAsSurvivalData(OWWidget):
@@ -73,12 +73,15 @@ class OWAsSurvivalData(OWWidget):
         if not self.time_var or not self.event_var or not data:
             return
 
-        metas = [meta for meta in data.domain.metas if meta not in (self.time_var, self.event_var)]
-        domain = Domain(data.domain.attributes, metas=metas, class_vars=[self.time_var, self.event_var])
+        class_vars = [self.time_var, self.event_var]
+        time_var = self.time_var
+        event_var = self.event_var
+        time_var.attributes[TIME_TO_EVENT_VAR] = TIME_VAR
+        event_var.attributes[TIME_TO_EVENT_VAR] = EVENT_VAR
+
+        metas = [meta for meta in data.domain.metas if meta not in class_vars]
+        domain = Domain(data.domain.attributes, metas=metas, class_vars=class_vars)
         data = data.transform(domain)
-        data.attributes[TIME_COLUMN] = self.time_var
-        data.attributes[EVENT_COLUMN] = self.event_var
-        data.attributes['problem_type'] = PROBLEM_TYPE
         return data
 
     @gui.deferred

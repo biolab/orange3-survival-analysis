@@ -11,7 +11,7 @@ from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
 
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints
 from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
 from orangecontrib.survival_analysis.widgets.data import check_survival_data
 
@@ -54,8 +54,9 @@ def stratify(stratify_on: ContinuousVariable, splitting_criteria: int, callback,
     elif splitting_criteria == SplittingCriteria.Mean:
         cutoff = np.mean
     elif splitting_criteria == SplittingCriteria.LogRankTest:
-        durations, _ = data.get_column_view(data.attributes[TIME_COLUMN])
-        events, _ = data.get_column_view(data.attributes[EVENT_COLUMN])
+        time_var, event_var = get_survival_endpoints(data.domain)
+        durations, _ = data.get_column_view(time_var)
+        events, _ = data.get_column_view(event_var)
         cutoff = partial(cutoff_by_log_rank_optimization, durations, events, callback)
     else:
         raise ValueError('Unknown splitting criteria')

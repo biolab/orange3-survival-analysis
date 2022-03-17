@@ -4,7 +4,7 @@ from lifelines import CoxPHFitter
 from Orange.data.pandas_compat import table_to_frame
 from Orange.base import Learner, Model
 
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import contains_survival_endpoints, get_survival_endpoints
 
 
 class CoxRegressionModel(Model):
@@ -55,17 +55,9 @@ class CoxRegressionLearner(Learner):
             return self.fit(data)
 
     def fit(self, data):
-        if not all(
-            annotation in data.attributes
-            for annotation in (
-                TIME_COLUMN,
-                EVENT_COLUMN,
-                'problem_type',
-            )
-        ):
+        if not contains_survival_endpoints(data.domain):
             raise ValueError(self.learner_adequacy_err_msg)
-        time_var = data.attributes[TIME_COLUMN]
-        event_var = data.attributes[EVENT_COLUMN]
+        time_var, event_var = get_survival_endpoints(data.domain)
 
         df = table_to_frame(data, include_metas=False)
         df = df.dropna(axis=0)

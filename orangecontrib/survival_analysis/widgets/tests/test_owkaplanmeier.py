@@ -13,7 +13,7 @@ from Orange.widgets.tests.base import WidgetTest, simulate
 from orangecontrib.survival_analysis.widgets.owassurvivaldata import OWAsSurvivalData
 from orangecontrib.survival_analysis.widgets.owkaplanmeier import OWKaplanMeier
 
-from orangecontrib.survival_analysis.widgets.data import TIME_COLUMN, EVENT_COLUMN
+from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints
 
 
 def mouse_press_and_hold(widget, pos, mouse_button=Qt.LeftButton):
@@ -54,11 +54,11 @@ class TestOWKaplanMeier(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
 
         # check survival data
-        data_attrs = self.widget.data.attributes
-        self.assertIn(TIME_COLUMN, data_attrs)
-        self.assertIn(EVENT_COLUMN, data_attrs)
-        self.assertIn(self.widget.data.domain[data_attrs[TIME_COLUMN]], self.widget.data.domain.class_vars)
-        self.assertIn(self.widget.data.domain[data_attrs[EVENT_COLUMN]], self.widget.data.domain.class_vars)
+        time_var, event_var = get_survival_endpoints(self.widget.data.domain)
+        self.assertEqual(time_var.name, 'Time')
+        self.assertEqual(event_var.name, 'Event')
+        self.assertIn(time_var, self.widget.data.domain.class_vars)
+        self.assertIn(event_var, self.widget.data.domain.class_vars)
 
         # check if missing data detected
         self.assertTrue(self.widget.Warning.missing_values_detected.is_shown())
