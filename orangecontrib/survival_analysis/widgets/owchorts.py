@@ -49,10 +49,18 @@ def cox_risk_score(cox_model: CoxRegressionModel, data: Table):
 def stratify(stratify_on: ContinuousVariable, splitting_criteria: int, callback, data: Table):
     stratify_on = stratify_on.compute_value(data)
 
+    def check_unique_values(split_by, values):
+        # return split_by(np.unique(values))
+        unique_vals = np.unique(values)
+        if len(unique_vals) <= 2:
+            return split_by(unique_vals)
+        else:
+            return split_by(values)
+
     if splitting_criteria == SplittingCriteria.Median:
-        cutoff = np.median
+        cutoff = partial(check_unique_values, np.median)
     elif splitting_criteria == SplittingCriteria.Mean:
-        cutoff = np.mean
+        cutoff = partial(check_unique_values, np.mean)
     elif splitting_criteria == SplittingCriteria.LogRankTest:
         time_var, event_var = get_survival_endpoints(data.domain)
         durations, _ = data.get_column_view(time_var)
