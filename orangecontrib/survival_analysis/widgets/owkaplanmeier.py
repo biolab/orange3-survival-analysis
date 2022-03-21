@@ -5,8 +5,8 @@ import pyqtgraph as pg
 from typing import Dict, List, Optional, NamedTuple
 from itertools import zip_longest
 
-from AnyQt.QtGui import QBrush, QColor, QPainterPath
-from AnyQt.QtCore import Qt, QSize
+from AnyQt.QtGui import QBrush, QColor, QPainterPath, QPalette
+from AnyQt.QtCore import Qt, QSize, QEvent
 from AnyQt.QtCore import pyqtSignal as Signal
 from pyqtgraph.functions import mkPen
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
@@ -243,6 +243,14 @@ class CustomLegendItem(LegendItem):
             self.layout.removeItem(item)
         self.items = []
         self.updateSize()
+
+    def changeEvent(self, event: QEvent):
+        if event.type() == QEvent.PaletteChange:
+            color = self.palette().color(QPalette.Text)
+            for item in self.items:
+                if isinstance(item, LabelItem):
+                    item.setText(item.text, color=color)
+        super(LegendItem, self).changeEvent(event)
 
 
 class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
