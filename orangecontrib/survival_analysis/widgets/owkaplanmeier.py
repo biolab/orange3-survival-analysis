@@ -559,7 +559,12 @@ class OWKaplanMeier(OWWidget):
             domain = Domain(domain.attributes, metas=domain.metas)
 
         self.controls.group_var.model().set_domain(domain)
-        self.group_var = None
+        if domain is not None:
+            group_var_model = self.controls.group_var.model()
+            if 'Cohorts' in domain and domain['Cohorts'] in group_var_model:
+                self.group_var = domain['Cohorts']
+            else:
+                self.group_var = None
 
         self.graph.selection = {}
         self.openContext(domain)
@@ -593,17 +598,15 @@ class OWKaplanMeier(OWWidget):
             return list(self.group_var.colors[index])
 
     def generate_plot_curves(self) -> List[EstimatedFunctionCurve]:
-        self._data = None
-
         if self.time_var is None or self.event_var is None:
             return []
 
-        data = self.data if self._data is None else self._data
+        data = self.data
         time, _ = data.get_column_view(self.time_var)
         events, _ = data.get_column_view(self.event_var)
 
         if self.group_var:
-            groups, _ = data.get_column_view(self.group_var)
+            groups, _ = data.get_column_view(self.group_var.name)
             group_indexes = [index for index, _ in enumerate(self.group_var.values)]
             colors = [self._get_discrete_var_color(index) for index in group_indexes]
             masks = groups == np.reshape(group_indexes, (-1, 1))
@@ -624,7 +627,7 @@ class OWKaplanMeier(OWWidget):
             self.Outputs.selected_data.send(None)
             return
 
-        data = self.data if self._data is None else self._data
+        data = self.data
 
         time, _ = data.get_column_view(self.time_var)
         if self.group_var is None:
@@ -633,7 +636,7 @@ class OWKaplanMeier(OWWidget):
             selection = np.argwhere((time >= start) & (time <= end)).reshape(-1).astype(int)
         else:
             selection = []
-            group, _ = data.get_column_view(self.group_var)
+            group, _ = data.get_column_view(self.group_var.name)
             for group_id, time_interval in self.graph.selection.items():
                 start, end = time_interval.x[0], time_interval.x[-1]
                 selection += (
