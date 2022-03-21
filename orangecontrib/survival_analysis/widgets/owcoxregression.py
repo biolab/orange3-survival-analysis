@@ -123,8 +123,9 @@ class OWCoxRegression(OWBaseLearner):
         self.Error.sparse_not_supported.clear()
         if self.data is not None and self.learner is not None:
             self.Error.data_error.clear()
-            if not self.learner.check_learner_adequacy(self.data.domain):
-                self.Error.data_error(self.learner.learner_adequacy_err_msg)
+            incompatibility_reason = self.learner.incompatibility_reason(self.data.domain)
+            if incompatibility_reason is not None:
+                self.Error.data_error(incompatibility_reason)
             elif not len(self.data):
                 self.Error.data_error("Dataset is empty.")
             elif self.data.X.size == 0:
