@@ -9,7 +9,7 @@ from lifelines import CoxPHFitter
 from statsmodels.stats.multitest import fdrcorrection
 
 from AnyQt.QtWidgets import QButtonGroup, QGridLayout, QRadioButton, QAbstractScrollArea
-from AnyQt.QtCore import Qt, QItemSelection, QItemSelectionModel, QItemSelectionRange
+from AnyQt.QtCore import Qt, QItemSelection, QItemSelectionModel, QItemSelectionRange, QSize
 
 from Orange.widgets import gui
 from Orange.widgets.settings import ContextSetting, DomainContextHandler, Setting
@@ -94,7 +94,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     selected_attrs = ContextSetting([], schema_only=True)
     selection_method = Setting(select_n_best, schema_only=True)
     n_selected = Setting(20, schema_only=True)
-    auto_commit: bool = Setting(False, schema_only=True)
+    auto_commit: bool = Setting(True, schema_only=True)
 
     class Inputs:
         data = Input('Data', Table)
@@ -137,7 +137,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
             self,
             'n_selected',
             1,
-            999,
+            9999,
             callback=lambda: self.set_selection_method(OWRankSurvivalFeatures.select_n_best),
             addToLayout=False,
         )
@@ -148,6 +148,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         grid.addWidget(s, 2, 1)
 
         sel_method_box.layout().addLayout(grid)
+        self.select_buttons.button(self.selection_method).setChecked(True)
 
         self.commit_button = gui.auto_commit(self.buttonsArea, self, 'auto_commit', '&Commit', box=False)
 
@@ -214,6 +215,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.model.setVerticalHeaderLabels([self.attr_name_to_variable[name] for name in covariate_names])
         self.table_view.resizeColumnsToContents()
 
+        # sort by p values
+        self.table_view.sortByColumn(2, Qt.AscendingOrder)
+
         self.auto_select()
 
     def on_exception(self, ex):
@@ -254,6 +258,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         attr_indices = self.model.mapToSourceRows(row_indices)
         self.selected_attrs = [self.model._headers[Qt.Vertical][row] for row in attr_indices]
         self.commit()
+
+    def sizeHint(self):
+        return QSize(750, 600)
 
 
 if __name__ == '__main__':
