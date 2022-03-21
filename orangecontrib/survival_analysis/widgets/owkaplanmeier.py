@@ -416,7 +416,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend.hide()
 
         self.legend.set_header()
-        for curve in [curve for curve in self.curves.values()]:
+        for curve in [c for c in self.curves.values()]:
             self.legend.set_curve(curve)
         if len(self.curves) > 1:
             self.legend.set_footer(format_p_value(2)(self.parent.log_rank_test.p_value))
