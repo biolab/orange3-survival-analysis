@@ -58,7 +58,7 @@ class StepwiseCoxRegressionPlot(gui.OWComponent, pg.PlotWidget):
         self.horizontal_line.setPen(color=QColor(Qt.darkGray), width=2, style=Qt.DashLine)
         self.horizontal_line.sigPositionChanged.connect(self.selection_line_moved.emit)
 
-        self.setLabels(left='-log2(p)', bottom='num. of genes')
+        self.setLabels(left='-log2(p)', bottom='num. of features')
 
     def set_plot(self, x, y):
         self.clear()
@@ -121,7 +121,7 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
     graph = SettingProvider(StepwiseCoxRegressionPlot)
     graph_name = 'graph.plotItem'
 
-    auto_commit: bool = Setting(False, schema_only=True)
+    auto_commit: bool = Setting(True, schema_only=True)
 
     class Inputs:
         data = Input('Data', Table)
