@@ -26,6 +26,7 @@ from Orange.widgets.settings import (
 )
 from Orange.widgets.utils.plot import SELECT, PANNING, ZOOMING, OWPlotGUI
 from Orange.widgets.utils.itemmodels import DomainModel
+from Orange.widgets.utils.annotated_data import create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.data.filter import IsDefined
 
@@ -469,7 +470,8 @@ class OWKaplanMeier(OWWidget):
         data = Input('Data', Table)
 
     class Outputs:
-        selected_data = Output('Data', Table)
+        selected_data = Output('Selected Data', Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -622,6 +624,7 @@ class OWKaplanMeier(OWWidget):
     def commit(self):
         if not self.graph.selection:
             self.Outputs.selected_data.send(None)
+            self.Outputs.annotated_data.send(None)
             return
 
         data = self.data if self._data is None else self._data
@@ -642,6 +645,7 @@ class OWKaplanMeier(OWWidget):
             selection = sorted(selection)
 
         self.Outputs.selected_data.send(data[selection, :])
+        self.Outputs.annotated_data.send(create_annotated_table(data, selection))
 
     def send_report(self):
         if self.data is None:
@@ -656,6 +660,4 @@ if __name__ == "__main__":
     from orangewidget.utils.widgetpreview import WidgetPreview
 
     table = Table('http://datasets.biolab.si/core/melanoma.tab')
-    table.attributes['time_var'] = table.domain['time']
-    table.attributes['event_var'] = table.domain['event']
     WidgetPreview(OWKaplanMeier).run(input_data=table)
