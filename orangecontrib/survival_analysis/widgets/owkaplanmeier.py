@@ -463,7 +463,7 @@ class OWKaplanMeier(OWWidget):
     graph = SettingProvider(KaplanMeierPlot)
     graph_name = 'graph.plotItem'
 
-    auto_commit: bool = Setting(False, schema_only=True)
+    auto_commit: bool = Setting(True, schema_only=True)
 
     class Inputs:
         data = Input('Data', Table)
