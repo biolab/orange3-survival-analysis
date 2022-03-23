@@ -5,9 +5,15 @@ from Orange.widgets.utils.messages import UnboundMsg
 from Orange.data import Table, Domain, Variable
 
 
-TIME_VAR = 'time'
-EVENT_VAR = 'event'
-TIME_TO_EVENT_VAR = '_time_to_event_var'
+TIME_VAR: str = 'time'
+EVENT_VAR: str = 'event'
+TIME_TO_EVENT_VAR: str = '_time_to_event_var'
+
+# Error/Warning messages related to survival data tables.
+MISSING_ROWS: str = 'Rows with missing values detected. They will be omitted.'
+MISSING_SURVIVAL_DATA: str = (
+    'No survival data detected. ' 'Use the "As Survival Data" widget or consult the documentation.'
+)
 
 
 def contains_survival_endpoints(domain: Domain):
@@ -35,15 +41,13 @@ def get_survival_endpoints(domain: Domain) -> Tuple[Optional[Variable], Optional
 
 def check_survival_data(f):
     """Check for survival data."""
-    error_msg = 'No survival data detected. Use the "As Survival Data" widget or consult the documentation.'
-    warning_msg = 'Rows with missing values detected. They will be omitted.'
 
     @wraps(f)
     def wrapper(widget, data: Table, *args, **kwargs):
-        widget.Error.add_message('missing_survival_data', UnboundMsg(error_msg))
+        widget.Error.add_message('missing_survival_data', UnboundMsg(MISSING_SURVIVAL_DATA))
         widget.Error.missing_survival_data.clear()
 
-        widget.Warning.add_message('missing_values_detected', UnboundMsg(warning_msg))
+        widget.Warning.add_message('missing_values_detected', UnboundMsg(MISSING_ROWS))
         widget.Warning.missing_values_detected.clear()
 
         if data is not None and isinstance(data, Table):

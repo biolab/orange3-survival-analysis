@@ -8,8 +8,8 @@ from Orange.data import Table
 from orangecontrib.survival_analysis.widgets.data import (
     contains_survival_endpoints,
     get_survival_endpoints,
+    MISSING_SURVIVAL_DATA,
 )
-
 
 def to_data_frame(table: Table) -> pd.DataFrame:
     columns = table.domain.attributes + table.domain.class_vars
@@ -47,14 +47,14 @@ class CoxRegressionModel(Model):
 class CoxRegressionLearner(Learner):
     __returns__ = CoxRegressionModel
     supports_multiclass = True
-    learner_adequacy_err_msg = 'Survival variables expected.  Use As Survival Data widget.'
 
     def __init__(self, preprocessors=None, **kwargs):
         self.params = vars()
         super().__init__(preprocessors=preprocessors)
 
-    def check_learner_adequacy(self, domain):
-        return len(domain.class_vars) == 2
+    def incompatibility_reason(self, domain):
+        if not contains_survival_endpoints(domain):
+            return MISSING_SURVIVAL_DATA
 
     def fit_storage(self, data):
         return self.fit(data)
@@ -67,7 +67,7 @@ class CoxRegressionLearner(Learner):
 
     def fit(self, data):
         if not contains_survival_endpoints(data.domain):
-            raise ValueError(self.learner_adequacy_err_msg)
+            raise ValueError(MISSING_SURVIVAL_DATA)
         time_var, event_var = get_survival_endpoints(data.domain)
 
         df = to_data_frame(data)
