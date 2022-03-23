@@ -1,10 +1,21 @@
 import numpy as np
+import pandas as pd
 
 from lifelines import CoxPHFitter
-from Orange.data.pandas_compat import table_to_frame
 from Orange.base import Learner, Model
+from Orange.data import Table
 
-from orangecontrib.survival_analysis.widgets.data import contains_survival_endpoints, get_survival_endpoints
+from orangecontrib.survival_analysis.widgets.data import (
+    contains_survival_endpoints,
+    get_survival_endpoints,
+)
+
+
+def to_data_frame(table: Table) -> pd.DataFrame:
+    columns = table.domain.attributes + table.domain.class_vars
+    df = pd.DataFrame({col.name: table.get_column_view(col)[0] for col in columns})
+    df = df.dropna(axis=0)
+    return df
 
 
 class CoxRegressionModel(Model):
@@ -59,10 +70,7 @@ class CoxRegressionLearner(Learner):
             raise ValueError(self.learner_adequacy_err_msg)
         time_var, event_var = get_survival_endpoints(data.domain)
 
-        df = table_to_frame(data, include_metas=False)
-        df = df.dropna(axis=0)
-        df[time_var.name] = df[time_var.name].astype(float)
-        df[event_var.name] = df[event_var.name].astype(float)
+        df = to_data_frame(data)
         cph = CoxPHFitter(**self.params['kwargs'])
         cph = cph.fit(df, duration_col=time_var.name, event_col=event_var.name)
         return CoxRegressionModel(cph)
