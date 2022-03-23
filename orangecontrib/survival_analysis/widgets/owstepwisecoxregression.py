@@ -102,7 +102,9 @@ def worker(data: Table, learner, state: TaskState):
         attributes = [attr for attr in _trace[-1].model.domain.attributes]
 
         if len(attributes) > 1:
-            combinations = [list(comb) for comb in itertools.combinations(attributes, len(attributes) - 1)]
+            combinations = [
+                list(comb) for comb in itertools.combinations(attributes, len(attributes) - 1)
+            ]
         else:
             combinations = [attributes]
 
@@ -145,7 +147,9 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
         self.graph.setAntialiasing(True)
 
         gui.rubber(self.controlArea)
-        self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
+        self.commit_button = gui.auto_commit(
+            self.controlArea, self, 'auto_commit', '&Commit', box=False
+        )
 
     @Inputs.learner
     def set_learner(self, learner: CoxRegressionLearner()):
@@ -219,7 +223,15 @@ if __name__ == "__main__":
     table.attributes['time_var'] = table.domain['time']
     table.attributes['event_var'] = table.domain['event']
     table.attributes['problem_type'] = 'time_to_event'
-    metas = [meta for meta in table.domain.metas if meta not in (table.domain['time'], table.domain['event'])]
-    domain = Domain(table.domain.attributes, metas=metas, class_vars=[table.domain['time'], table.domain['event']])
+    metas = [
+        meta
+        for meta in table.domain.metas
+        if meta not in (table.domain['time'], table.domain['event'])
+    ]
+    domain = Domain(
+        table.domain.attributes,
+        metas=metas,
+        class_vars=[table.domain['time'], table.domain['event']],
+    )
     table = table.transform(domain)
     WidgetPreview(OWStepwiseCoxRegression).run(input_data=table)
