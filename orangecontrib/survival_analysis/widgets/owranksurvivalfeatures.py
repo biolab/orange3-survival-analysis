@@ -18,10 +18,10 @@ from Orange.widgets.utils.itemmodels import PyTableModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain
-from Orange.data.pandas_compat import table_to_frame
 from Orange.widgets.data.owrank import TableView
 
 from orangecontrib.survival_analysis.widgets.data import check_survival_data, get_survival_endpoints
+from orangecontrib.survival_analysis.modeling.cox import to_data_frame
 
 
 def batch_to_process(queue, time_var, event_var, df):
@@ -35,6 +35,7 @@ def batch_to_process(queue, time_var, event_var, df):
         # log-likelihood ratio test
         ll_ratio_test = model.log_likelihood_ratio_test()
         batch_results.append((covariate, cph.log_likelihood_, ll_ratio_test.test_statistic, ll_ratio_test.p_value))
+
     return np.array(batch_results)
 
 
@@ -43,8 +44,7 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
         _queue = _manager.Queue()
         _cpu_count = cpu_count()
 
-        df = table_to_frame(table, include_metas=False)
-        df = df.astype({event_var: np.float64})
+        df = to_data_frame(table)
         if len(covariates) > 50:
             batches = (
                 df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
