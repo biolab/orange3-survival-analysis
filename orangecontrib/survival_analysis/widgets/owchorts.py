@@ -42,11 +42,15 @@ def cutoff_by_log_rank_optimization(durations, events, callback, values):
     return cutoff
 
 
-def cox_risk_score(cox_model: CoxRegressionModel, data: Table):
+def cox_risk_score(cox_model: CoxRegressionModel, domain: Domain, data: Table):
+    data = data.transform(domain)
     return cox_model.predict(data.X)
 
 
-def stratify(stratify_on: ContinuousVariable, splitting_criteria: int, callback, data: Table):
+def stratify(
+    stratify_on: ContinuousVariable, splitting_criteria: int, domain: Domain, callback, data: Table
+):
+    data = data.transform(domain)
     stratify_on = stratify_on.compute_value(data)
 
     def check_unique_values(split_by, values):
@@ -117,12 +121,16 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
         )
 
         box = gui.vBox(self.controlArea, 'Splitting Criteria', margin=0)
-        self.radio_buttons = gui.radioButtons(box, self, 'splitting_criteria', callback=self.commit.deferred)
+        self.radio_buttons = gui.radioButtons(
+            box, self, 'splitting_criteria', callback=self.commit.deferred
+        )
 
         for _, opt in self.splitting_criteria_options:
             gui.appendRadioButton(self.radio_buttons, opt)
 
-        self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
+        self.commit_button = gui.auto_commit(
+            self.controlArea, self, 'auto_commit', '&Commit', box=False
+        )
 
     @Inputs.learner
     def set_learner(self, learner: CoxRegressionLearner):
@@ -156,11 +164,15 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
         if self.stratify_on == StratifyOn.CoxRiskScore:
             cox_model = self.learner(data)
             _, risk_score_label = self.stratify_on_options[self.stratify_on]
-            risk_score_var = ContinuousVariable(risk_score_label, compute_value=partial(cox_risk_score, cox_model))
+            risk_score_var = ContinuousVariable(
+                risk_score_label, compute_value=partial(cox_risk_score, cox_model, data.domain)
+            )
             risk_group_var = DiscreteVariable(
                 'Cohorts',
                 values=['Low risk', 'High risk'],
-                compute_value=partial(stratify, risk_score_var, self.splitting_criteria, callback),
+                compute_value=partial(
+                    stratify, risk_score_var, self.splitting_criteria, data.domain, callback
+                ),
             )
 
             cohort_vars = (
