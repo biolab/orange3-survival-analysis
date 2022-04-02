@@ -11,6 +11,7 @@ from orangecontrib.survival_analysis.widgets.data import (
     MISSING_SURVIVAL_DATA,
 )
 
+
 def to_data_frame(table: Table) -> pd.DataFrame:
     columns = table.domain.attributes + table.domain.class_vars
     df = pd.DataFrame({col.name: table.get_column_view(col)[0] for col in columns})
