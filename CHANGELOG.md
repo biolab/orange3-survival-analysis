@@ -6,6 +6,10 @@ Change Log
 * ...
 
 
+[0.4.0] - 2022-04-02
+--------------------
+
+
 [0.3.0] - 2021-10-28
 --------------------
 ##### Enhancements
@@ -30,8 +34,8 @@ Change Log
 * New widget: Kaplan-Meier Plot
 
 
-
-[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.3.0...master
+[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.4.0...master
+[0.4.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/biolab/orange3-survival-analysis/compare/20b2bd8ea02876eb9cad3925e0954054da2690de...0.1.0
