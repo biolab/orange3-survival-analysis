@@ -466,9 +466,10 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
 class OWKaplanMeier(OWWidget):
     name = 'Kaplan-Meier Plot'
-    description = 'Plot the Kaplan-Meier estimate.'
+    description = 'Visualisation of Kaplan-Meier estimator.'
     icon = 'icons/owkaplanmeier.svg'
     priority = 10
+    keywords = ['Kaplan-Meier', 'survival curve', 'log-rank']
 
     show_confidence_interval: bool
     show_confidence_interval = Setting(False)

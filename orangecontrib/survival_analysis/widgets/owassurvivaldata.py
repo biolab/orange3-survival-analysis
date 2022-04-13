@@ -18,11 +18,12 @@ from orangecontrib.survival_analysis.widgets.data import TIME_VAR, EVENT_VAR, TI
 
 class OWAsSurvivalData(OWWidget):
     name = 'As Survival Data'
-    description = ''
+    description = 'Mark features Time and Event as target variables.'
     icon = 'icons/owassurvivaldata.svg'
     priority = 0
     want_main_area = False
     resizing_enabled = False
+    keywords = ['time', 'event', 'censoring']
 
     class Inputs:
         data = Input('Data', Table)

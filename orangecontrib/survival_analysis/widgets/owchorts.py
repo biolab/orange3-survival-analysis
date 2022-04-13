@@ -78,11 +78,12 @@ def stratify(
 
 class OWCohorts(OWWidget, ConcurrentWidgetMixin):
     name = 'Cohorts'
-    description = ''
+    description = 'Stratify samples into low/high risk groups.'
     icon = 'icons/owcohorts.svg'
     priority = 50
     want_main_area = False
     resizing_enabled = False
+    keywords = ['risk score', 'cohorts']
 
     class Inputs:
         data = Input('Data', Table)
