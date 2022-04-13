@@ -1,7 +1,10 @@
 from lifelines.utils import concordance_index
 from Orange.data import DiscreteVariable, ContinuousVariable, Domain
 from Orange.evaluation.scoring import Score
-from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints, contains_survival_endpoints
+from orangecontrib.survival_analysis.widgets.data import (
+    get_survival_endpoints,
+    contains_survival_endpoints,
+)
 
 __all__ = ['ConcordanceIndex']
 

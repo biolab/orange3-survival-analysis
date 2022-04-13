@@ -48,9 +48,15 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget = self.create_widget(OWKaplanMeier)
 
         # handle survival data
-        self.send_signal(self.as_survival.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab'))
-        simulate.combobox_activate_item(self.as_survival.controls.time_var, self.as_survival._data.columns.Time.name)
-        simulate.combobox_activate_item(self.as_survival.controls.event_var, self.as_survival._data.columns.Event.name)
+        self.send_signal(
+            self.as_survival.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab')
+        )
+        simulate.combobox_activate_item(
+            self.as_survival.controls.time_var, self.as_survival._data.columns.Time.name
+        )
+        simulate.combobox_activate_item(
+            self.as_survival.controls.event_var, self.as_survival._data.columns.Event.name
+        )
         self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
 
         # check survival data
@@ -97,7 +103,9 @@ class TestOWKaplanMeier(WidgetTest):
         self.assertTrue(len(self.widget.graph.curves) == 1)
 
         # there should be only 2 items (empty selection and curve)
-        items = [item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)]
+        items = [
+            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+        ]
         self.assertTrue(len(items) == 2)
 
         # select group
@@ -110,17 +118,23 @@ class TestOWKaplanMeier(WidgetTest):
         # there should be only 4 items:
         #   - 2 empty selection items
         #   - 2 curves
-        items = [item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)]
+        items = [
+            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+        ]
         self.assertTrue(len(items) == 4)
 
     def test_legend(self):
-        legend = tuple(label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem))
+        legend = tuple(
+            label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem)
+        )
         self.assertIn('All', legend)
 
         self.widget.group_var = self.widget.data.domain['Group']
         self.widget.on_group_changed()
 
-        legend = tuple(label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem))
+        legend = tuple(
+            label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem)
+        )
         for group in self.widget.group_var.values:
             self.assertIn(group, legend)
 
@@ -239,9 +253,17 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.on_display_option_changed()
 
         # check if all scene items are plotted after display option has changed
-        plot_items = [item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)]
-        scatter_items = [item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.ScatterPlotItem)]
-        infinite_line = [item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.InfiniteLine)]
+        plot_items = [
+            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+        ]
+        scatter_items = [
+            item
+            for item in self.widget.graph.sceneObj.items()
+            if isinstance(item, pg.ScatterPlotItem)
+        ]
+        infinite_line = [
+            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.InfiniteLine)
+        ]
 
         self.assertEqual(5, len(plot_items))
         self.assertEqual(6, len(scatter_items))

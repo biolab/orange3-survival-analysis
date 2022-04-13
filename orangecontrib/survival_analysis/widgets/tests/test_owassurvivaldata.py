@@ -17,10 +17,14 @@ class TestOWAsSurvivalData(WidgetTest):
         self.assertEqual(self.widget.controls.event_var.count(), 2)
 
     def test_output_survival_data(self):
-        simulate.combobox_activate_item(self.widget.controls.time_var, self.widget._data.columns.Time.name)
+        simulate.combobox_activate_item(
+            self.widget.controls.time_var, self.widget._data.columns.Time.name
+        )
         self.assertEqual(self.widget.time_var.name, self.widget._data.columns.Time.name)
 
-        simulate.combobox_activate_item(self.widget.controls.event_var, self.widget._data.columns.Event.name)
+        simulate.combobox_activate_item(
+            self.widget.controls.event_var, self.widget._data.columns.Event.name
+        )
         self.assertEqual(self.widget.event_var.name, self.widget._data.columns.Event.name)
 
         output_data = self.get_output(self.widget.Outputs.data)
@@ -28,4 +32,6 @@ class TestOWAsSurvivalData(WidgetTest):
         self.assertIsNotNone(class_vars)
         self.assertTrue(len(class_vars) == 2)
         self.assertTrue(all(TIME_TO_EVENT_VAR in t.attributes for t in class_vars))
-        self.assertTrue(all(t.attributes[TIME_TO_EVENT_VAR] in [TIME_VAR, EVENT_VAR] for t in class_vars))
+        self.assertTrue(
+            all(t.attributes[TIME_TO_EVENT_VAR] in [TIME_VAR, EVENT_VAR] for t in class_vars)
+        )

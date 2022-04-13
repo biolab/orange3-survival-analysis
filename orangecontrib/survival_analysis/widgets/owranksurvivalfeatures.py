@@ -31,10 +31,14 @@ def batch_to_process(queue, time_var, event_var, df):
     for covariate in [col for col in df.columns if col not in (time_var, event_var)]:
         queue.put(covariate)
         # fit cox
-        model = cph.fit(df[[time_var, event_var, covariate]], duration_col=time_var, event_col=event_var)
+        model = cph.fit(
+            df[[time_var, event_var, covariate]], duration_col=time_var, event_col=event_var
+        )
         # log-likelihood ratio test
         ll_ratio_test = model.log_likelihood_ratio_test()
-        batch_results.append((covariate, cph.log_likelihood_, ll_ratio_test.test_statistic, ll_ratio_test.p_value))
+        batch_results.append(
+            (covariate, cph.log_likelihood_, ll_ratio_test.test_statistic, ll_ratio_test.p_value)
+        )
 
     return np.array(batch_results)
 
@@ -47,7 +51,8 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
         df = to_data_frame(table)
         if len(covariates) > 50:
             batches = (
-                df[[time_var, event_var] + batch] for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
+                df[[time_var, event_var] + batch]
+                for batch in [covariates[i::_cpu_count] for i in range(_cpu_count)]
             )
         else:
             batches = (df[[time_var, event_var] + [cov]] for cov in covariates)
@@ -150,13 +155,17 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         sel_method_box.layout().addLayout(grid)
         self.select_buttons.button(self.selection_method).setChecked(True)
 
-        self.commit_button = gui.auto_commit(self.buttonsArea, self, 'auto_commit', '&Commit', box=False)
+        self.commit_button = gui.auto_commit(
+            self.buttonsArea, self, 'auto_commit', '&Commit', box=False
+        )
 
         # Main area
         self.model = PyTableModel(parent=self)
         self.table_view = TableView(parent=self)
         self.table_view.setModel(self.model)
-        self.model.setHorizontalHeaderLabels(['Log-Likelihood', 'Log-Likelihood Ratio', f'{"p".center(13)}', 'FDR'])
+        self.model.setHorizontalHeaderLabels(
+            ['Log-Likelihood', 'Log-Likelihood Ratio', f'{"p".center(13)}', 'FDR']
+        )
         self.table_view.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContentsOnFirstShow)
         self.table_view.selectionModel().selectionChanged.connect(self.on_select)
 
@@ -198,7 +207,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         if not self.selected_attrs:
             self.Outputs.reduced_data.send(None)
         else:
-            reduced_domain = Domain(self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas)
+            reduced_domain = Domain(
+                self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas
+            )
             data = self.data.transform(reduced_domain)
             self.Outputs.reduced_data.send(data)
 
@@ -212,7 +223,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.covariates_from_worker_result = covariate_names.tolist()
 
         # match covariate names to domain variables and set vertical header
-        self.model.setVerticalHeaderLabels([self.attr_name_to_variable[name] for name in covariate_names])
+        self.model.setVerticalHeaderLabels(
+            [self.attr_name_to_variable[name] for name in covariate_names]
+        )
         self.table_view.resizeColumnsToContents()
 
         # sort by p values
@@ -240,14 +253,21 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
             selection = QItemSelection()
         elif self.selection_method == OWRankSurvivalFeatures.select_n_best:
             n_selected = min(self.n_selected, row_count)
-            selection = QItemSelection(self.model.index(0, 0), self.model.index(n_selected - 1, column_count - 1))
+            selection = QItemSelection(
+                self.model.index(0, 0), self.model.index(n_selected - 1, column_count - 1)
+            )
         else:
             selection = QItemSelection()
             if self.selected_attrs is not None:
-                attr_indices = [self.covariates_from_worker_result.index(var.name) for var in self.selected_attrs]
+                attr_indices = [
+                    self.covariates_from_worker_result.index(var.name)
+                    for var in self.selected_attrs
+                ]
                 for row in self.model.mapFromSourceRows(attr_indices):
                     selection.append(
-                        QItemSelectionRange(self.model.index(row, 0), self.model.index(row, column_count - 1))
+                        QItemSelectionRange(
+                            self.model.index(row, 0), self.model.index(row, column_count - 1)
+                        )
                     )
 
         selection_model.select(selection, QItemSelectionModel.ClearAndSelect)

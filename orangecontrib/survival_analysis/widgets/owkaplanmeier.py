@@ -51,7 +51,14 @@ class EstimatedFunctionCurve:
     @staticmethod
     def generate_curve_coordinates(timeline, probabilities):
         intervals = zip_longest(zip(timeline, probabilities), zip(timeline[1:], probabilities[:-1]))
-        x, y = zip(*[coordinate for start, finish in intervals for coordinate in (start, finish) if coordinate])
+        x, y = zip(
+            *[
+                coordinate
+                for start, finish in intervals
+                for coordinate in (start, finish)
+                if coordinate
+            ]
+        )
         return np.array(x), np.array(y)
 
     def __init__(self, time, events, label=None, color=None):
@@ -84,7 +91,9 @@ class EstimatedFunctionCurve:
         self.median_survival = median = np.round(
             median_survival_times(self._kmf.survival_function_.astype(np.float32)), 1
         )
-        self.median_vertical = pg.PlotDataItem(x=(median, median), y=(0, 0.5), pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE))
+        self.median_vertical = pg.PlotDataItem(
+            x=(median, median), y=(0, 0.5), pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE)
+        )
 
         censored_data = self.get_censored_data()
 
@@ -109,7 +118,9 @@ class EstimatedFunctionCurve:
         time_events = np.column_stack((self._kmf.durations, self._kmf.event_observed))
         censored_time = time_events[np.argwhere(time_events[:, 1] == 0), 0]
         survival = self._kmf.survival_function_.values
-        return np.column_stack((censored_time, survival[np.where(censored_time == self._kmf.timeline)[1]]))
+        return np.column_stack(
+            (censored_time, survival[np.where(censored_time == self._kmf.timeline)[1]])
+        )
 
     def get_color(self, alpha=255) -> QColor:
         color = QColor(*self.color) if self.color else QColor(Qt.darkGray)
@@ -212,7 +223,9 @@ class CustomLegendItem(LegendItem):
 
     def set_curve(self, curve: EstimatedFunctionCurve):
         curve_label = LabelItem(curve.label, color=curve.get_color())
-        samples = LabelItem(f'{curve.num_of_samples - curve.num_of_censored_samples}/{curve.num_of_samples}')
+        samples = LabelItem(
+            f'{curve.num_of_samples - curve.num_of_censored_samples}/{curve.num_of_samples}'
+        )
         median = LabelItem(f'{curve.median_survival}')
 
         row = self.layout.rowCount()
@@ -527,7 +540,9 @@ class OWKaplanMeier(OWWidget):
 
         gui.rubber(self.controlArea)
 
-        self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
+        self.commit_button = gui.auto_commit(
+            self.controlArea, self, 'auto_commit', '&Commit', box=False
+        )
 
     @property
     def time_var(self):
@@ -579,7 +594,9 @@ class OWKaplanMeier(OWWidget):
         self.graph.selection = {}
         self.openContext(domain)
 
-        self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
+        self.graph.curves = {
+            curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())
+        }
         self.graph.update_plot(**self._get_plot_options())
 
         self.commit.now()
@@ -598,7 +615,9 @@ class OWKaplanMeier(OWWidget):
         if not self.data:
             return
 
-        self.graph.curves = {curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())}
+        self.graph.curves = {
+            curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())
+        }
         self.graph.clear_selection()
         self.graph.update_plot(**self._get_plot_options())
         self.commit.now()
@@ -651,7 +670,10 @@ class OWKaplanMeier(OWWidget):
             for group_id, time_interval in self.graph.selection.items():
                 start, end = time_interval.x[0], time_interval.x[-1]
                 selection += (
-                    np.argwhere((time >= start) & (time <= end) & (group == group_id)).reshape(-1).astype(int).tolist()
+                    np.argwhere((time >= start) & (time <= end) & (group == group_id))
+                    .reshape(-1)
+                    .astype(int)
+                    .tolist()
                 )
             selection = sorted(selection)
 

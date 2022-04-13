@@ -4,7 +4,14 @@ from Orange.widgets import gui
 from Orange.widgets.settings import Setting, ContextSetting, DomainContextHandler
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.widgets.utils.itemmodels import DomainModel
-from Orange.data import Table, Domain, ContinuousVariable, TimeVariable, StringVariable, DiscreteVariable
+from Orange.data import (
+    Table,
+    Domain,
+    ContinuousVariable,
+    TimeVariable,
+    StringVariable,
+    DiscreteVariable,
+)
 
 from orangecontrib.survival_analysis.widgets.data import TIME_VAR, EVENT_VAR, TIME_TO_EVENT_VAR
 
@@ -36,12 +43,28 @@ class OWAsSurvivalData(OWWidget):
         event_var_model = DomainModel(valid_types=(DiscreteVariable,))
 
         box = gui.vBox(self.controlArea, 'Time', margin=0)
-        gui.comboBox(box, self, 'time_var', model=time_var_model, callback=self.commit.deferred, searchable=True)
+        gui.comboBox(
+            box,
+            self,
+            'time_var',
+            model=time_var_model,
+            callback=self.commit.deferred,
+            searchable=True,
+        )
 
         box = gui.vBox(self.controlArea, 'Event', margin=0)
-        gui.comboBox(box, self, 'event_var', model=event_var_model, callback=self.commit.deferred, searchable=True)
+        gui.comboBox(
+            box,
+            self,
+            'event_var',
+            model=event_var_model,
+            callback=self.commit.deferred,
+            searchable=True,
+        )
 
-        self.commit_button = gui.auto_commit(self.controlArea, self, 'auto_commit', '&Commit', box=False)
+        self.commit_button = gui.auto_commit(
+            self.controlArea, self, 'auto_commit', '&Commit', box=False
+        )
 
     @Inputs.data
     def set_data(self, data: Table) -> None:

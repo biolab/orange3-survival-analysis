@@ -62,7 +62,13 @@ class OWCoxRegression(OWBaseLearner):
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         box = gui.hBox(self.controlArea, 'Regularization')
-        gui.radioButtons(box, self, 'reg_type', btnLabels=self.REGULARIZATION_TYPES, callback=self._reg_type_changed)
+        gui.radioButtons(
+            box,
+            self,
+            'reg_type',
+            btnLabels=self.REGULARIZATION_TYPES,
+            callback=self._reg_type_changed,
+        )
 
         gui.separator(box, 20, 20)
         self.alpha_box = box2 = gui.vBox(box, margin=10)
@@ -100,7 +106,9 @@ class OWCoxRegression(OWBaseLearner):
             callback=self._l2_ratio_changed,
         )
         gui.widgetLabel(box5, 'L2')
-        self.l2_ratio_label = gui.widgetLabel(box4, "", sizePolicy=(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+        self.l2_ratio_label = gui.widgetLabel(
+            box4, "", sizePolicy=(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        )
         self.l2_ratio_label.setAlignment(Qt.AlignCenter)
 
         box5 = gui.hBox(self.controlArea)
@@ -141,7 +149,9 @@ class OWCoxRegression(OWBaseLearner):
         if self.model is not None:
             # create coefficients table
             domain = Domain([ContinuousVariable('coef')], metas=[StringVariable('covariate')])
-            coef_table = Table.from_list(domain, list(zip(self.model.coefficients, self.model.covariates)))
+            coef_table = Table.from_list(
+                domain, list(zip(self.model.coefficients, self.model.covariates))
+            )
             coef_table.name = 'coefficients'
             self.Outputs.coefficients.send(coef_table)
 
@@ -175,7 +185,9 @@ class OWCoxRegression(OWBaseLearner):
         self.apply()
 
     def _set_l2_ratio_label(self):
-        self.l2_ratio_label.setText("{:.{}f} : {:.{}f}".format(1 - self.l2_ratio, 2, self.l2_ratio, 2))
+        self.l2_ratio_label.setText(
+            "{:.{}f} : {:.{}f}".format(1 - self.l2_ratio, 2, self.l2_ratio, 2)
+        )
 
     def _l2_ratio_changed(self):
         self._set_l2_ratio_label()
@@ -199,7 +211,15 @@ if __name__ == "__main__":
     table.attributes['time_var'] = table.domain['time']
     table.attributes['event_var'] = table.domain['event']
     table.attributes['problem_tye'] = 'time_to_event'
-    metas = [meta for meta in table.domain.metas if meta not in (table.domain['time'], table.domain['event'])]
-    domain = Domain(table.domain.attributes, metas=metas, class_vars=[table.domain['time'], table.domain['event']])
+    metas = [
+        meta
+        for meta in table.domain.metas
+        if meta not in (table.domain['time'], table.domain['event'])
+    ]
+    domain = Domain(
+        table.domain.attributes,
+        metas=metas,
+        class_vars=[table.domain['time'], table.domain['event']],
+    )
     table = table.transform(domain)
     WidgetPreview(OWCoxRegression).run(input_data=table)
