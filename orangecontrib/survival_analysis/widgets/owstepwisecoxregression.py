@@ -116,9 +116,10 @@ def worker(data: Table, learner, state: TaskState):
 
 class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
     name = 'Stepwise Cox Regression'
-    description = 'Backward feature elimination'
+    description = 'Feature selection with backward elimination.'
     icon = 'icons/owstepwisecoxregression.svg'
     priority = 40
+    keywords = ['feature selection', 'backward elimination', 'cox regression']
 
     graph = SettingProvider(StepwiseCoxRegressionPlot)
     graph_name = 'graph.plotItem'

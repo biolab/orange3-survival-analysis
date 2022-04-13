@@ -86,11 +86,10 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
 
 class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     name = 'Rank Survival Features'
-    # TODO: Add widget metadata
-    description = ''
+    description = 'Ranking of features by univariate Cox regression analysis.'
     icon = 'icons/owranksurvivalfeatures.svg'
     priority = 30
-    keywords = []
+    keywords = ['univariate cox regression', 'rank', 'log-likelihood ratio test']
 
     buttons_area_orientation = Qt.Vertical
     select_none, manual_selection, select_n_best = range(3)

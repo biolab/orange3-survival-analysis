@@ -1,0 +1,73 @@
+[
+ [
+  "Survival Analysis",
+  [
+   {
+    "text": "As Survival Data",
+    "doc": "widgets/as-survival-data.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owassurvivaldata.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "time",
+     "event",
+     "censoring"
+    ]
+   },
+   {
+    "text": "Kaplan-Meier Plot",
+    "doc": "widgets/kaplan-meier-plot.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owkaplanmeier.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "Kaplan-Meier",
+     "survival curve",
+     "log-rank"
+    ]
+   },
+   {
+    "text": "Cox regression",
+    "doc": "widgets/cox-regression.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owcoxregression.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "ridge",
+     "lasso",
+     "elastic net",
+     "cox regression"
+    ]
+   },
+   {
+    "text": "Rank Survival Features",
+    "doc": "widgets/rank-survival-features.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owranksurvivalfeatures.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "univariate cox regression",
+     "rank",
+     "log-likelihood ratio test"
+    ]
+   },
+   {
+    "text": "Stepwise Cox Regression",
+    "doc": "widgets/stepwise-cox-regression.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owstepwisecoxregression.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "feature selection",
+     "backward elimination",
+     "cox regression"
+    ]
+   },
+   {
+    "text": "Cohorts",
+    "doc": "widgets/cohorts.md",
+    "icon": "../orangecontrib/survival_analysis/widgets/icons/owcohorts.svg",
+    "background": "#f0e0ff",
+    "keywords": [
+     "risk score",
+     "cohorts"
+    ]
+   }
+  ]
+ ]
+]

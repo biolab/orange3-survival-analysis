@@ -22,6 +22,7 @@ class OWCoxRegression(OWBaseLearner):
     )
     icon = 'icons/owcoxregression.svg'
     priority = 20
+    keywords = ['ridge', 'lasso', 'elastic net', 'cox regression']
 
     LEARNER = CoxRegressionLearner
 
