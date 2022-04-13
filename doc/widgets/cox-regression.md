@@ -1,10 +1,10 @@
 Cox Regression
 ================
-
+Fit the Cox regression model on input data.
 
 **Inputs**
 
-- todo
+- reference survival dataset
 
 **Outputs**
 

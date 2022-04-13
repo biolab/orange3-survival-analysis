@@ -4,11 +4,11 @@ Visualisation of Kaplan-Meier estimator.
 
 **Inputs**
 
-- Data: reference dataset
+- Data: reference survival dataset
 
 **Outputs**
 
-- Data: reference dataset with an additional column showing whether a point is selected
+- Data: reference survival dataset with an additional column showing whether a point is selected
 - Selected Data: instances selected from the plot
 
 **Kaplan-Meier Plot** is a visual representation of the estimated survival function that shows the probability of an event at a respective time interval. It works on survival datasets, which by definition include time and event observations. We can select which features should serve as Time and Event variables manually using [As Survival](as-survival-data.md). The plot allows visualisation of the survival functions of different groups based on feature values. This can be selected on the left side of the widget, where we can also choose wheter to display confidence intervals, median and/or censored data instances. The plot enables interactive selection of data instances that are propagated down the workflow for potential further analysis. The method for [Kaplan-Meier estimation](https://en.wikipedia.org/wiki/Kaplan%E2%80%93Meier_estimator) is implemented in [lifelines](https://lifelines.readthedocs.io/en/latest/index.html) (the python package for survival analysis) by Davidson-Pilon (2019).
