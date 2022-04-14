@@ -4,7 +4,7 @@ Fit the Cox regression model on input data.
 
 **Inputs**
 
-- reference survival dataset
+- Data: reference survival dataset
 
 **Outputs**
 
