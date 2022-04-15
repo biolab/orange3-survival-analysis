@@ -1,6 +1,6 @@
 Stepwise Cox Regression
 =======================
-
+Perform feature selection through backward elimination process.
 
 **Inputs**
 

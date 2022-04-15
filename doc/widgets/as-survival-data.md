@@ -4,11 +4,11 @@ Mark features Time and Event as target variables.
 
 **Inputs**
 
-- Data: reference data set
+- Data: reference dataset
 
 **Outputs**
 
-- Data: reference data with selected Time and Event marked as target variables
+- Data: reference dataset with selected Time and Event marked as target variables
 
 **As Survival** enables the user to manually select which feature will be treated as the Time and Event target variable in the survival dataset.
 
