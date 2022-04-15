@@ -1,6 +1,6 @@
 Cohorts
 =======
-Calculate the risk score for each data instance and stratify into high and low-risk cohorts. 
+Calculate the risk score for each data instance and stratify into high and low-risk cohorts.
 
 **Inputs**
 
