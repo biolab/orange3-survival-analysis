@@ -266,5 +266,5 @@ class TestOWKaplanMeier(WidgetTest):
         ]
 
         self.assertEqual(5, len(plot_items))
-        self.assertEqual(6, len(scatter_items))
+        self.assertEqual(7, len(scatter_items))
         self.assertEqual(1, len(infinite_line))
