@@ -3,7 +3,7 @@ import pandas as pd
 
 from lifelines import CoxPHFitter
 from Orange.base import Learner, Model
-from Orange.data import Table
+from Orange.data import Table, Domain, table_from_frame
 
 from orangecontrib.survival_analysis.widgets.data import (
     contains_survival_endpoints,
@@ -40,6 +40,19 @@ class CoxRegressionModel(Model):
     def predict(self, X):
         """Predict risk scores."""
         return self._model.predict_partial_hazard(X)
+
+    def summary_to_table(self) -> Table:
+        df = self._model.summary
+
+        if 'cmp to' in df.columns:
+            df = df.drop(['cmp to'], axis=1)
+
+        table = table_from_frame(df)
+        table.name = 'model summary'
+        domain = Domain(
+            [table.domain['coef']], metas=[var for var in table.domain if var.name != 'coef']
+        )
+        return table.transform(domain)
 
     def __call__(self, data, ret=Model.Value):
         return self.predict(data.X).array
