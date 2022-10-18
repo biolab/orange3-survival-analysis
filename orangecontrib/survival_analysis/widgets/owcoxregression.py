@@ -3,8 +3,7 @@ from itertools import chain
 from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QLayout, QSizePolicy
 
-from Orange.data import StringVariable
-from Orange.data import Table, Domain, ContinuousVariable
+from Orange.data import Table
 from Orange.widgets import settings, gui
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.utils.widgetpreview import WidgetPreview
@@ -148,13 +147,7 @@ class OWCoxRegression(OWBaseLearner):
     def update_model(self):
         super().update_model()
         if self.model is not None:
-            # create coefficients table
-            domain = Domain([ContinuousVariable('coef')], metas=[StringVariable('covariate')])
-            coef_table = Table.from_list(
-                domain, list(zip(self.model.coefficients, self.model.covariates))
-            )
-            coef_table.name = 'coefficients'
-            self.Outputs.coefficients.send(coef_table)
+            self.Outputs.coefficients.send(self.model.summary_to_table())
 
     def create_learner(self):
         alpha = self.alphas[self.alpha_index]
@@ -209,18 +202,4 @@ class OWCoxRegression(OWBaseLearner):
 
 if __name__ == "__main__":
     table = Table('http://datasets.biolab.si/core/melanoma.tab')
-    table.attributes['time_var'] = table.domain['time']
-    table.attributes['event_var'] = table.domain['event']
-    table.attributes['problem_tye'] = 'time_to_event'
-    metas = [
-        meta
-        for meta in table.domain.metas
-        if meta not in (table.domain['time'], table.domain['event'])
-    ]
-    domain = Domain(
-        table.domain.attributes,
-        metas=metas,
-        class_vars=[table.domain['time'], table.domain['event']],
-    )
-    table = table.transform(domain)
     WidgetPreview(OWCoxRegression).run(input_data=table)
