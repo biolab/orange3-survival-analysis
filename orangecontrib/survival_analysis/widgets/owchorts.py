@@ -1,6 +1,6 @@
 import numpy as np
 from functools import partial
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 from enum import IntEnum
 
 from lifelines.statistics import multivariate_logrank_test
@@ -8,8 +8,10 @@ from lifelines.statistics import multivariate_logrank_test
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
 from Orange.widgets.widget import Input, Output, OWWidget
-from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
+from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
+from Orange.modelling import Model
+
 
 from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints
 from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
@@ -91,6 +93,12 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
 
     class Outputs:
         data = Output('Data', Table)
+        coefficients = Output('Coefficients', Table)
+        model = Output(
+            'Model',
+            Model,
+            dynamic=False,
+        )
 
     stratify_on: int = Setting(StratifyOn.CoxRiskScore, schema_only=True)
     splitting_criteria: int = Setting(SplittingCriteria.Median, schema_only=True)
@@ -152,8 +160,9 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
             return
         self.start(self.stratify_data, self.data)
 
-    def stratify_data(self, data: Table, state: TaskState) -> Optional[Table]:
-        cohort_vars = ()
+    def stratify_data(
+        self, data: Table, state: TaskState
+    ) -> Optional[Tuple[Table, CoxRegressionModel]]:
         steps = iter(np.linspace(0, 100, len(data)))
 
         def callback():
@@ -181,15 +190,20 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
                 risk_group_var,
             )
 
-        domain = Domain(
-            self.data.domain.attributes,
-            self.data.domain.class_vars,
-            self.data.domain.metas + cohort_vars,
-        )
-        return self.data.transform(domain)
+            domain = Domain(
+                self.data.domain.attributes,
+                self.data.domain.class_vars,
+                self.data.domain.metas + cohort_vars,
+            )
+            return self.data.transform(domain), cox_model
 
     def on_done(self, result):
-        self.Outputs.data.send(result if result else None)
+        if result is None:
+            return
+        data, model = result
+
+        self.Outputs.data.send(data)
+        self.Outputs.coefficients.send(model.summary_to_table())
 
     def on_partial_result(self, result: Any) -> None:
         pass
