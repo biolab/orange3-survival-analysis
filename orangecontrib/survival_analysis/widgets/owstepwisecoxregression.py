@@ -12,8 +12,14 @@ from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
 from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain
 
-from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, get_survival_endpoints
+from orangecontrib.survival_analysis.modeling.cox import (
+    CoxRegressionLearner,
+    CoxRegressionModel,
+)
+from orangecontrib.survival_analysis.widgets.data import (
+    check_survival_data,
+    get_survival_endpoints,
+)
 
 
 class CustomInfiniteLine(pg.InfiniteLine):
@@ -38,7 +44,9 @@ class CustomInfiniteLine(pg.InfiniteLine):
         super().setPos((pos_x, pos_y))
 
     def setMouseHover(self, hover):
-        self._parent.view_box.setCursor(Qt.PointingHandCursor if hover else Qt.ArrowCursor)
+        self._parent.view_box.setCursor(
+            Qt.PointingHandCursor if hover else Qt.ArrowCursor
+        )
         super().setMouseHover(hover)
 
 
@@ -55,7 +63,9 @@ class StepwiseCoxRegressionPlot(gui.OWComponent, pg.PlotWidget):
         self.map_x_to_y: Optional[Dict[str, str]] = None
         self.plot_line: Optional[pg.PlotDataItem] = None
         self.horizontal_line = CustomInfiniteLine(self, movable=True)
-        self.horizontal_line.setPen(color=QColor(Qt.darkGray), width=2, style=Qt.DashLine)
+        self.horizontal_line.setPen(
+            color=QColor(Qt.darkGray), width=2, style=Qt.DashLine
+        )
         self.horizontal_line.sigPositionChanged.connect(self.selection_line_moved.emit)
 
         self.setLabels(left='-log2(p)', bottom='num. of features')
@@ -95,15 +105,16 @@ def worker(data: Table, learner, state: TaskState):
             results.append(result)
         return results
 
-    attributes = [attr for attr in data.domain.attributes]
+    attributes = list(data.domain.attributes)
     progress_steps = iter(np.linspace(0, 100, len(attributes)))
     _trace = fit_cox_models([attributes])
     while len(_trace) != len(data.domain.attributes):
-        attributes = [attr for attr in _trace[-1].model.domain.attributes]
+        attributes = list(_trace[-1].model.domain.attributes)
 
         if len(attributes) > 1:
             combinations = [
-                list(comb) for comb in itertools.combinations(attributes, len(attributes) - 1)
+                list(comb)
+                for comb in itertools.combinations(attributes, len(attributes) - 1)
             ]
         else:
             combinations = [attributes]

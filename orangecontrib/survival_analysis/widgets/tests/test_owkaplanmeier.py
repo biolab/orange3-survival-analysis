@@ -20,7 +20,9 @@ def mouse_press_and_hold(widget, pos, mouse_button=Qt.LeftButton):
     if isinstance(widget, QGraphicsView):
         widget = widget.viewport()
 
-    event = QMouseEvent(QEvent.MouseButtonPress, pos, mouse_button, Qt.NoButton, Qt.NoModifier)
+    event = QMouseEvent(
+        QEvent.MouseButtonPress, pos, mouse_button, Qt.NoButton, Qt.NoModifier
+    )
     QApplication.sendEvent(widget, event)
 
 
@@ -28,7 +30,9 @@ def mouse_release(widget, pos, mouse_button=Qt.LeftButton):
     if isinstance(widget, QGraphicsView):
         widget = widget.viewport()
 
-    event = QMouseEvent(QEvent.MouseButtonRelease, pos, mouse_button, Qt.NoButton, Qt.NoModifier)
+    event = QMouseEvent(
+        QEvent.MouseButtonRelease, pos, mouse_button, Qt.NoButton, Qt.NoModifier
+    )
     QApplication.sendEvent(widget, event)
 
 
@@ -49,15 +53,19 @@ class TestOWKaplanMeier(WidgetTest):
 
         # handle survival data
         self.send_signal(
-            self.as_survival.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab')
+            self.as_survival.Inputs.data,
+            Table(f'{self.test_data_path}/toy_example.tab'),
         )
         simulate.combobox_activate_item(
             self.as_survival.controls.time_var, self.as_survival._data.columns.Time.name
         )
         simulate.combobox_activate_item(
-            self.as_survival.controls.event_var, self.as_survival._data.columns.Event.name
+            self.as_survival.controls.event_var,
+            self.as_survival._data.columns.Event.name,
         )
-        self.send_signal(self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data))
+        self.send_signal(
+            self.widget.Inputs.data, self.get_output(self.as_survival.Outputs.data)
+        )
 
         # check survival data
         time_var, event_var = get_survival_endpoints(self.widget.data.domain)
@@ -71,16 +79,22 @@ class TestOWKaplanMeier(WidgetTest):
 
         self.widget.auto_commit = True
 
-        # If we don't do this function ViewBox.mapSceneToView fails with num py.linalg.LinAlgError: Singular matrix
+        # If we don't do this function ViewBox.mapSceneToView
+        # fails with num py.linalg.LinAlgError: Singular matrix
         vb = self.widget.graph.getViewBox()
         vb.resize(200, 200)
 
     def simulate_mouse_drag(self, start: tuple, end: tuple):
-        start = self.widget.graph.view_box.mapViewToScene(pg.Point(start[0], start[1])).toPoint()
-        end = self.widget.graph.view_box.mapViewToScene(pg.Point(end[0], end[1])).toPoint()
+        start = self.widget.graph.view_box.mapViewToScene(
+            pg.Point(start[0], start[1])
+        ).toPoint()
+        end = self.widget.graph.view_box.mapViewToScene(
+            pg.Point(end[0], end[1])
+        ).toPoint()
 
         mouse_move(self.widget.graph, start)
-        # this is somehow not respected in KaplanMeierViewBox.mouseDragEvent so we do it here manualy
+        # this is somehow not respected in KaplanMeierViewBox.mouseDragEvent
+        # so we do it here manualy
         self.widget.graph.plotItem.scene().blockSignals(True)
 
         QTest.qWait(100)
@@ -92,7 +106,9 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.graph.plotItem.scene().blockSignals(False)
 
     def test_incorrect_input_data(self):
-        self.send_signal(self.widget.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab'))
+        self.send_signal(
+            self.widget.Inputs.data, Table(f'{self.test_data_path}/toy_example.tab')
+        )
         self.assertTrue(self.widget.Error.missing_survival_data.is_shown())
         self.assertIsNone(self.widget.data)
         self.assertIsNone(self.widget.time_var)
@@ -104,7 +120,9 @@ class TestOWKaplanMeier(WidgetTest):
 
         # there should be only 2 items (empty selection and curve)
         items = [
-            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+            item
+            for item in self.widget.graph.sceneObj.items()
+            if isinstance(item, pg.PlotDataItem)
         ]
         self.assertTrue(len(items) == 2)
 
@@ -119,13 +137,17 @@ class TestOWKaplanMeier(WidgetTest):
         #   - 2 empty selection items
         #   - 2 curves
         items = [
-            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+            item
+            for item in self.widget.graph.sceneObj.items()
+            if isinstance(item, pg.PlotDataItem)
         ]
         self.assertTrue(len(items) == 4)
 
     def test_legend(self):
         legend = tuple(
-            label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem)
+            label.text
+            for label in self.widget.graph.legend.items
+            if isinstance(label, LabelItem)
         )
         self.assertIn('All', legend)
 
@@ -133,7 +155,9 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.on_group_changed()
 
         legend = tuple(
-            label.text for label in self.widget.graph.legend.items if isinstance(label, LabelItem)
+            label.text
+            for label in self.widget.graph.legend.items
+            if isinstance(label, LabelItem)
         )
         for group in self.widget.group_var.values:
             self.assertIn(group, legend)
@@ -254,7 +278,9 @@ class TestOWKaplanMeier(WidgetTest):
 
         # check if all scene items are plotted after display option has changed
         plot_items = [
-            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.PlotDataItem)
+            item
+            for item in self.widget.graph.sceneObj.items()
+            if isinstance(item, pg.PlotDataItem)
         ]
         scatter_items = [
             item
@@ -262,7 +288,9 @@ class TestOWKaplanMeier(WidgetTest):
             if isinstance(item, pg.ScatterPlotItem)
         ]
         infinite_line = [
-            item for item in self.widget.graph.sceneObj.items() if isinstance(item, pg.InfiniteLine)
+            item
+            for item in self.widget.graph.sceneObj.items()
+            if isinstance(item, pg.InfiniteLine)
         ]
 
         self.assertEqual(5, len(plot_items))

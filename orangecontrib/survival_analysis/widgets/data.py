@@ -12,7 +12,8 @@ TIME_TO_EVENT_VAR: str = '_time_to_event_var'
 # Error/Warning messages related to survival data tables.
 MISSING_ROWS: str = 'Rows with missing values detected. They will be omitted.'
 MISSING_SURVIVAL_DATA: str = (
-    'No survival data detected. ' 'Use the "As Survival Data" widget or consult the documentation.'
+    'No survival data detected. '
+    'Use the "As Survival Data" widget or consult the documentation.'
 )
 
 
@@ -21,11 +22,15 @@ def contains_survival_endpoints(domain: Domain):
     return (
         len(class_vars) == 2
         and all(TIME_TO_EVENT_VAR in t.attributes for t in class_vars)
-        and all(t.attributes[TIME_TO_EVENT_VAR] in [TIME_VAR, EVENT_VAR] for t in class_vars)
+        and all(
+            t.attributes[TIME_TO_EVENT_VAR] in [TIME_VAR, EVENT_VAR] for t in class_vars
+        )
     )
 
 
-def get_survival_endpoints(domain: Domain) -> Tuple[Optional[Variable], Optional[Variable]]:
+def get_survival_endpoints(
+    domain: Domain,
+) -> Tuple[Optional[Variable], Optional[Variable]]:
     time_var = None
     event_var = None
     if contains_survival_endpoints(domain):
@@ -44,7 +49,9 @@ def check_survival_data(f):
 
     @wraps(f)
     def wrapper(widget, data: Table, *args, **kwargs):
-        widget.Error.add_message('missing_survival_data', UnboundMsg(MISSING_SURVIVAL_DATA))
+        widget.Error.add_message(
+            'missing_survival_data', UnboundMsg(MISSING_SURVIVAL_DATA)
+        )
         widget.Error.missing_survival_data.clear()
 
         widget.Warning.add_message('missing_values_detected', UnboundMsg(MISSING_ROWS))

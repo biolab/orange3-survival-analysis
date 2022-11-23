@@ -53,7 +53,8 @@ master_doc = 'index'
 # General information about the project.
 project = 'Orange3 Survival Analysis'
 copyright = (
-    '2022, Laboratory of Bioinformatics, Faculty of Computer Science, University of Ljubljana'
+    '2022, Laboratory of Bioinformatics, '
+    'Faculty of Computer Science, University of Ljubljana'
 )
 
 # The version info for the project you're documenting, acts as replacement for
@@ -247,7 +248,9 @@ man_pages = [
         'index',
         'orange3survivalanalysis',
         'Orange3 Survival Analysis Documentation',
-        ['Laboratory of Bioinformatics, Faculty of Computer Science, University of Ljubljana'],
+        [
+            'Laboratory of Bioinformatics, Faculty of Computer Science, University of Ljubljana'
+        ],
         1,
     )
 ]

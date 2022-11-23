@@ -131,7 +131,9 @@ class OWCoxRegression(OWBaseLearner):
         self.Error.sparse_not_supported.clear()
         if self.data is not None and self.learner is not None:
             self.Error.data_error.clear()
-            incompatibility_reason = self.learner.incompatibility_reason(self.data.domain)
+            incompatibility_reason = self.learner.incompatibility_reason(
+                self.data.domain
+            )
             if incompatibility_reason is not None:
                 self.Error.data_error(incompatibility_reason)
             elif not len(self.data):
@@ -190,12 +192,19 @@ class OWCoxRegression(OWBaseLearner):
     def get_learner_parameters(self):
         regularization = 'No Regularization'
         if self.reg_type == OWCoxRegression.Ridge:
-            regularization = f'Ridge Regression (L2) with α={self.alphas[self.alpha_index]}'
+            regularization = (
+                f'Ridge Regression (L2) with α={self.alphas[self.alpha_index]}'
+            )
         elif self.reg_type == OWCoxRegression.Lasso:
-            regularization = f'Lasso Regression (L1) with α={self.alphas[self.alpha_index]}'
+            regularization = (
+                f'Lasso Regression (L1) with α={self.alphas[self.alpha_index]}'
+            )
         elif self.reg_type == OWCoxRegression.Elastic:
-            regularization = 'Elastic Net Regression with α={}' ' and L1:L2 ratio of {}:{}'.format(
-                self.alphas[self.alpha_index], self.l2_ratio, 1 - self.l2_ratio
+            regularization = (
+                'Elastic Net Regression with α={}'
+                ' and L1:L2 ratio of {}:{}'.format(
+                    self.alphas[self.alpha_index], self.l2_ratio, 1 - self.l2_ratio
+                )
             )
         return (('Regularization', regularization),)
 

@@ -14,7 +14,10 @@ from Orange.modelling import Model
 
 
 from orangecontrib.survival_analysis.widgets.data import get_survival_endpoints
-from orangecontrib.survival_analysis.modeling.cox import CoxRegressionLearner, CoxRegressionModel
+from orangecontrib.survival_analysis.modeling.cox import (
+    CoxRegressionLearner,
+    CoxRegressionModel,
+)
 from orangecontrib.survival_analysis.widgets.data import check_survival_data
 
 
@@ -50,7 +53,11 @@ def cox_risk_score(cox_model: CoxRegressionModel, domain: Domain, data: Table):
 
 
 def stratify(
-    stratify_on: ContinuousVariable, splitting_criteria: int, domain: Domain, callback, data: Table
+    stratify_on: ContinuousVariable,
+    splitting_criteria: int,
+    domain: Domain,
+    callback,
+    data: Table,
 ):
     data = data.transform(domain)
     stratify_on = stratify_on.compute_value(data)
@@ -175,13 +182,18 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
             cox_model = self.learner(data)
             _, risk_score_label = self.stratify_on_options[self.stratify_on]
             risk_score_var = ContinuousVariable(
-                risk_score_label, compute_value=partial(cox_risk_score, cox_model, data.domain)
+                risk_score_label,
+                compute_value=partial(cox_risk_score, cox_model, data.domain),
             )
             risk_group_var = DiscreteVariable(
                 'Cohorts',
                 values=['Low risk', 'High risk'],
                 compute_value=partial(
-                    stratify, risk_score_var, self.splitting_criteria, data.domain, callback
+                    stratify,
+                    risk_score_var,
+                    self.splitting_criteria,
+                    data.domain,
+                    callback,
                 ),
             )
 

@@ -37,9 +37,9 @@ class CoxRegressionModel(Model):
         """return -log2p from log-likelihood ratio test"""
         return -np.log2(self._model.log_likelihood_ratio_test().p_value)
 
-    def predict(self, X):
+    def predict(self, x):
         """Predict risk scores."""
-        return self._model.predict_partial_hazard(X)
+        return self._model.predict_partial_hazard(x)
 
     def summary_to_table(self) -> Table:
         df = self._model.summary
@@ -50,7 +50,8 @@ class CoxRegressionModel(Model):
         table = table_from_frame(df)
         table.name = 'model summary'
         domain = Domain(
-            [table.domain['coef']], metas=[var for var in table.domain if var.name != 'coef']
+            [table.domain['coef']],
+            metas=[var for var in table.domain if var.name != 'coef'],
         )
         return table.transform(domain)
 

@@ -13,7 +13,11 @@ from Orange.data import (
     DiscreteVariable,
 )
 
-from orangecontrib.survival_analysis.widgets.data import TIME_VAR, EVENT_VAR, TIME_TO_EVENT_VAR
+from orangecontrib.survival_analysis.widgets.data import (
+    TIME_VAR,
+    EVENT_VAR,
+    TIME_TO_EVENT_VAR,
+)
 
 
 class OWAsSurvivalData(OWWidget):
@@ -119,4 +123,6 @@ class OWAsSurvivalData(OWWidget):
 if __name__ == "__main__":
     from orangewidget.utils.widgetpreview import WidgetPreview
 
-    WidgetPreview(OWAsSurvivalData).run(Table('http://datasets.biolab.si/core/melanoma.tab'))
+    WidgetPreview(OWAsSurvivalData).run(
+        Table('http://datasets.biolab.si/core/melanoma.tab')
+    )

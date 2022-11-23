@@ -26,7 +26,10 @@ from Orange.widgets.settings import (
 )
 from Orange.widgets.utils.plot import SELECT, PANNING, ZOOMING, OWPlotGUI
 from Orange.widgets.utils.itemmodels import DomainModel
-from Orange.widgets.utils.annotated_data import create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME
+from Orange.widgets.utils.annotated_data import (
+    create_annotated_table,
+    ANNOTATED_DATA_SIGNAL_NAME,
+)
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.data.filter import IsDefined
 
@@ -50,7 +53,9 @@ def create_line_symbol():
 class EstimatedFunctionCurve:
     @staticmethod
     def generate_curve_coordinates(timeline, probabilities):
-        intervals = zip_longest(zip(timeline, probabilities), zip(timeline[1:], probabilities[:-1]))
+        intervals = zip_longest(
+            zip(timeline, probabilities), zip(timeline[1:], probabilities[:-1])
+        )
         x, y = zip(
             *[
                 coordinate
@@ -62,7 +67,9 @@ class EstimatedFunctionCurve:
         return np.array(x), np.array(y)
 
     def __init__(self, time, events, label=None, color=None):
-        self._kmf = KaplanMeierFitter().fit(time.astype(np.float64), events.astype(np.float64))
+        self._kmf = KaplanMeierFitter().fit(
+            time.astype(np.float64), events.astype(np.float64)
+        )
 
         self._label: str = label
         self.color: List[int] = color
@@ -285,7 +292,10 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.view_box: KaplanMeierViewBox = self.getViewBox()
 
         self._mouse_moved_signal = pg.SignalProxy(
-            self.plotItem.scene().sigMouseMoved, slot=self.mouseMovedEvent, delay=0.15, rateLimit=10
+            self.plotItem.scene().sigMouseMoved,
+            slot=self.mouseMovedEvent,
+            delay=0.15,
+            rateLimit=10,
         )
         self.view_box.selection_changed.connect(self.on_selection_changed)
 
@@ -357,7 +367,9 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         """If curve id is None clear all else clear only highlighted curve"""
         if curve_id is not None:
             self.curves[curve_id].selection.hide()
-            self.selection = {key: val for key, val in self.selection.items() if key != curve_id}
+            self.selection = {
+                key: val for key, val in self.selection.items() if key != curve_id
+            }
             return
 
         for curve in self.curves.values():
@@ -399,7 +411,9 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         right_selection = (end_x, curve.y[right])
         middle_selection = np.column_stack((curve.x, curve.y))[left:right]
         selected = np.vstack((left_selection, middle_selection, right_selection))
-        self.selection[self.highlighted_curve] = SelectionInterval(selected[:, 0], selected[:, 1])
+        self.selection[self.highlighted_curve] = SelectionInterval(
+            selected[:, 0], selected[:, 1]
+        )
         self.set_selection_item(self.highlighted_curve)
 
         if is_finished:
@@ -413,7 +427,9 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
             return
 
         if median:
-            self.addItem(pg.InfiniteLine(pos=0.5, angle=0, pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE)))
+            self.addItem(
+                pg.InfiniteLine(pos=0.5, angle=0, pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE))
+            )
 
         for curve in self.curves.values():
             self.addItem(curve.estimated_fun)
@@ -438,7 +454,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         self.legend.hide()
 
         self.legend.set_header()
-        for curve in [c for c in self.curves.values()]:
+        for curve in list(self.curves.values()):
             self.legend.set_curve(curve)
         if len(self.curves) > 1:
             self.legend.set_footer(format_p_value(2)(self.parent.log_rank_test.p_value))
@@ -502,10 +518,18 @@ class OWKaplanMeier(OWWidget):
         self.plot_curves = None
         self.log_rank_test = None
 
-        group_var_model = DomainModel(placeholder='(None)', valid_types=(DiscreteVariable,))
+        group_var_model = DomainModel(
+            placeholder='(None)', valid_types=(DiscreteVariable,)
+        )
 
         box = gui.vBox(self.controlArea, 'Group', margin=0)
-        gui.comboBox(box, self, 'group_var', model=group_var_model, callback=self.on_group_changed)
+        gui.comboBox(
+            box,
+            self,
+            'group_var',
+            model=group_var_model,
+            callback=self.on_group_changed,
+        )
 
         box = gui.vBox(self.controlArea, 'Display options')
         gui.checkBox(
@@ -596,7 +620,8 @@ class OWKaplanMeier(OWWidget):
         self.openContext(domain)
 
         self.graph.curves = {
-            curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())
+            curve_id: curve
+            for curve_id, curve in enumerate(self.generate_plot_curves())
         }
         self.graph.update_plot(**self._get_plot_options())
 
@@ -617,7 +642,8 @@ class OWKaplanMeier(OWWidget):
             return
 
         self.graph.curves = {
-            curve_id: curve for curve_id, curve in enumerate(self.generate_plot_curves())
+            curve_id: curve
+            for curve_id, curve in enumerate(self.generate_plot_curves())
         }
         self.graph.clear_selection()
         self.graph.update_plot(**self._get_plot_options())
@@ -643,7 +669,9 @@ class OWKaplanMeier(OWWidget):
             self.log_rank_test = multivariate_logrank_test(time, groups, events)
 
             return [
-                EstimatedFunctionCurve(time[mask], events[mask], color=color, label=label)
+                EstimatedFunctionCurve(
+                    time[mask], events[mask], color=color, label=label
+                )
                 for mask, color, label in zip(masks, colors, self.group_var.values)
                 if mask.any()
             ]
@@ -664,7 +692,9 @@ class OWKaplanMeier(OWWidget):
         if self.group_var is None:
             time_interval = self.graph.selection[0].x
             start, end = time_interval[0], time_interval[-1]
-            selection = np.argwhere((time >= start) & (time <= end)).reshape(-1).astype(int)
+            selection = (
+                np.argwhere((time >= start) & (time <= end)).reshape(-1).astype(int)
+            )
         else:
             selection = []
             group, _ = data.get_column_view(self.group_var.name)

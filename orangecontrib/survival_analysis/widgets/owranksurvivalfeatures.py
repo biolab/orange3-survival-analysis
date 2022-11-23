@@ -9,7 +9,13 @@ from lifelines import CoxPHFitter
 from statsmodels.stats.multitest import fdrcorrection
 
 from AnyQt.QtWidgets import QButtonGroup, QGridLayout, QRadioButton, QAbstractScrollArea
-from AnyQt.QtCore import Qt, QItemSelection, QItemSelectionModel, QItemSelectionRange, QSize
+from AnyQt.QtCore import (
+    Qt,
+    QItemSelection,
+    QItemSelectionModel,
+    QItemSelectionRange,
+    QSize,
+)
 
 from Orange.widgets import gui
 from Orange.widgets.settings import ContextSetting, DomainContextHandler, Setting
@@ -20,7 +26,10 @@ from Orange.widgets.widget import Input, Output, OWWidget
 from Orange.data import Table, Domain
 from Orange.widgets.data.owrank import TableView
 
-from orangecontrib.survival_analysis.widgets.data import check_survival_data, get_survival_endpoints
+from orangecontrib.survival_analysis.widgets.data import (
+    check_survival_data,
+    get_survival_endpoints,
+)
 from orangecontrib.survival_analysis.modeling.cox import to_data_frame
 
 
@@ -32,18 +41,27 @@ def batch_to_process(queue, time_var, event_var, df):
         queue.put(covariate)
         # fit cox
         model = cph.fit(
-            df[[time_var, event_var, covariate]], duration_col=time_var, event_col=event_var
+            df[[time_var, event_var, covariate]],
+            duration_col=time_var,
+            event_col=event_var,
         )
         # log-likelihood ratio test
         ll_ratio_test = model.log_likelihood_ratio_test()
         batch_results.append(
-            (covariate, cph.log_likelihood_, ll_ratio_test.test_statistic, ll_ratio_test.p_value)
+            (
+                covariate,
+                cph.log_likelihood_,
+                ll_ratio_test.test_statistic,
+                ll_ratio_test.p_value,
+            )
         )
 
     return np.array(batch_results)
 
 
-def worker(table: Table, covariates: List, time_var: str, event_var: str, state: TaskState):
+def worker(
+    table: Table, covariates: List, time_var: str, event_var: str, state: TaskState
+):
     with multiprocessing.Manager() as _manager:
         _queue = _manager.Queue()
         _cpu_count = cpu_count()
@@ -80,7 +98,9 @@ def worker(table: Table, covariates: List, time_var: str, event_var: str, state:
             covariate_names = stacked_result[:, 0]
             results = stacked_result[:, 1:].astype(float)
             _, pvals_corrected = fdrcorrection(results[:, -1], is_sorted=False)
-            results = np.hstack((results, pvals_corrected.reshape(pvals_corrected.shape[0], -1)))
+            results = np.hstack(
+                (results, pvals_corrected.reshape(pvals_corrected.shape[0], -1))
+            )
             return covariate_names, results
 
 
@@ -123,13 +143,13 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(6)
         self.select_buttons = QButtonGroup()
-        self.select_buttons.buttonClicked[int].connect(self.set_selection_method)
+        self.select_buttons.idClicked.connect(self.set_selection_method)
 
-        def button(text, buttonid, toolTip=None):
+        def button(text, buttonid, tool_tip=None):
             b = QRadioButton(text)
             self.select_buttons.addButton(b, buttonid)
-            if toolTip is not None:
-                b.setToolTip(toolTip)
+            if tool_tip is not None:
+                b.setToolTip(tool_tip)
             return b
 
         b1 = button(self.tr('None'), OWRankSurvivalFeatures.select_none)
@@ -142,7 +162,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
             'n_selected',
             1,
             9999,
-            callback=lambda: self.set_selection_method(OWRankSurvivalFeatures.select_n_best),
+            callback=lambda: self.set_selection_method(
+                OWRankSurvivalFeatures.select_n_best
+            ),
             addToLayout=False,
         )
 
@@ -165,7 +187,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         self.model.setHorizontalHeaderLabels(
             ['Log-Likelihood', 'Log-Likelihood Ratio', f'{"p".center(13)}', 'FDR']
         )
-        self.table_view.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContentsOnFirstShow)
+        self.table_view.setSizeAdjustPolicy(
+            QAbstractScrollArea.AdjustToContentsOnFirstShow
+        )
         self.table_view.selectionModel().selectionChanged.connect(self.on_select)
 
         def _set_select_manual():
@@ -195,7 +219,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
             return
 
         self.data = data
-        self.attr_name_to_variable = {attr.name: attr for attr in self.data.domain.attributes}
+        self.attr_name_to_variable = {
+            attr.name: attr for attr in self.data.domain.attributes
+        }
 
         self.openContext(data)
         time_var, event_var = get_survival_endpoints(self.data.domain)
@@ -253,7 +279,8 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         elif self.selection_method == OWRankSurvivalFeatures.select_n_best:
             n_selected = min(self.n_selected, row_count)
             selection = QItemSelection(
-                self.model.index(0, 0), self.model.index(n_selected - 1, column_count - 1)
+                self.model.index(0, 0),
+                self.model.index(n_selected - 1, column_count - 1),
             )
         else:
             selection = QItemSelection()
@@ -265,7 +292,8 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
                 for row in self.model.mapFromSourceRows(attr_indices):
                     selection.append(
                         QItemSelectionRange(
-                            self.model.index(row, 0), self.model.index(row, column_count - 1)
+                            self.model.index(row, 0),
+                            self.model.index(row, column_count - 1),
                         )
                     )
 
@@ -275,7 +303,9 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
         selected_rows = self.table_view.selectionModel().selectedRows(0)
         row_indices = [i.row() for i in selected_rows]
         attr_indices = self.model.mapToSourceRows(row_indices)
-        self.selected_attrs = [self.model._headers[Qt.Vertical][row] for row in attr_indices]
+        self.selected_attrs = [
+            self.model._headers[Qt.Vertical][row] for row in attr_indices
+        ]
         self.commit()
 
     def sizeHint(self):
