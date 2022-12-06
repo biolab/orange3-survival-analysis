@@ -5,6 +5,15 @@ Change Log
 ------------
 * ...
 
+[0.5.0] - 2022-12-06
+--------------------
+##### Enhancements
+* owcohors: add model and coefficients output ([#52](../../pull/52))
+* owranksurvivalfeatures: add log-rank scorer ([#57](../../pull/57))
+* owranksurvivalfeatures: add Features output ([#58](../../pull/58))
+
+##### Fixes
+* Remove calls to deprecated get_column_view method ([#59](../../pull/59))
 
 [0.4.0] - 2022-04-02
 --------------------
@@ -34,7 +43,8 @@ Change Log
 * New widget: Kaplan-Meier Plot
 
 
-[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.4.0...master
+[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.5.0...master
+[0.5.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.1.0...0.2.0
