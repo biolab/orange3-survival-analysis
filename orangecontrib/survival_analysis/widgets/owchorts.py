@@ -76,8 +76,8 @@ def stratify(
         cutoff = partial(check_unique_values, np.mean)
     elif splitting_criteria == SplittingCriteria.LogRankTest:
         time_var, event_var = get_survival_endpoints(data.domain)
-        durations, _ = data.get_column_view(time_var)
-        events, _ = data.get_column_view(event_var)
+        durations = data.get_column(time_var)
+        events = data.get_column(event_var)
         cutoff = partial(cutoff_by_log_rank_optimization, durations, events, callback)
     else:
         raise ValueError('Unknown splitting criteria')
