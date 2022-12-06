@@ -23,7 +23,7 @@ from Orange.widgets.settings import ContextSetting, DomainContextHandler, Settin
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
 from Orange.widgets.utils.itemmodels import PyTableModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.widget import Input, Output, OWWidget
+from Orange.widgets.widget import Input, Output, OWWidget, AttributeList
 from Orange.data import Table, Domain
 from Orange.widgets.data.owrank import TableView
 
@@ -210,6 +210,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
 
     class Outputs:
         reduced_data = Output('Reduced Data', Table, default=True)
+        features = Output("Features", AttributeList, dynamic=False)
 
     def __init__(self):
         OWWidget.__init__(self)
@@ -311,12 +312,14 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     def commit(self):
         if not self.selected_attrs:
             self.Outputs.reduced_data.send(None)
+            self.Outputs.features.send(None)
         else:
             reduced_domain = Domain(
                 self.selected_attrs, self.data.domain.class_vars, self.data.domain.metas
             )
             data = self.data.transform(reduced_domain)
             self.Outputs.reduced_data.send(data)
+            self.Outputs.features.send(AttributeList(self.selected_attrs))
 
     def on_done(self, worker_result):
         self.model.wrap(worker_result)
