@@ -658,11 +658,11 @@ class OWKaplanMeier(OWWidget):
             return []
 
         data = self.data
-        time, _ = data.get_column_view(self.time_var)
-        events, _ = data.get_column_view(self.event_var)
+        time = data.get_column(self.time_var)
+        events = data.get_column(self.event_var)
 
         if self.group_var:
-            groups, _ = data.get_column_view(self.group_var.name)
+            groups = data.get_column(self.group_var.name)
             group_indexes = [index for index, _ in enumerate(self.group_var.values)]
             colors = [self._get_discrete_var_color(index) for index in group_indexes]
             masks = groups == np.reshape(group_indexes, (-1, 1))
@@ -688,7 +688,7 @@ class OWKaplanMeier(OWWidget):
 
         data = self.data
 
-        time, _ = data.get_column_view(self.time_var)
+        time = data.get_column(self.time_var)
         if self.group_var is None:
             time_interval = self.graph.selection[0].x
             start, end = time_interval[0], time_interval[-1]
@@ -697,7 +697,7 @@ class OWKaplanMeier(OWWidget):
             )
         else:
             selection = []
-            group, _ = data.get_column_view(self.group_var.name)
+            group = data.get_column(self.group_var.name)
             for group_id, time_interval in self.graph.selection.items():
                 start, end = time_interval.x[0], time_interval.x[-1]
                 selection += (

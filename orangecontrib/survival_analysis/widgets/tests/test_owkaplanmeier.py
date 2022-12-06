@@ -85,12 +85,8 @@ class TestOWKaplanMeier(WidgetTest):
         vb.resize(200, 200)
 
     def simulate_mouse_drag(self, start: tuple, end: tuple):
-        start = self.widget.graph.view_box.mapViewToScene(
-            pg.Point(start[0], start[1])
-        ).toPoint()
-        end = self.widget.graph.view_box.mapViewToScene(
-            pg.Point(end[0], end[1])
-        ).toPoint()
+        start = self.widget.graph.view_box.mapViewToScene(pg.Point(start[0], start[1]))
+        end = self.widget.graph.view_box.mapViewToScene(pg.Point(end[0], end[1]))
 
         mouse_move(self.widget.graph, start)
         # this is somehow not respected in KaplanMeierViewBox.mouseDragEvent
@@ -166,13 +162,13 @@ class TestOWKaplanMeier(WidgetTest):
         self.widget.group_var = self.widget.data.domain['Group']
         self.widget.on_group_changed()
 
-        pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.5)).toPoint()
+        pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.5))
         mouse_move(self.widget.graph, pos)
         # We need to wait for events to process
         QTest.qWait(100)
         self.assertTrue(self.widget.graph.highlighted_curve == 1)
 
-        pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.85)).toPoint()
+        pos = self.widget.graph.view_box.mapViewToScene(pg.Point(1.5, 0.85))
         mouse_move(self.widget.graph, pos)
         QTest.qWait(100)
         self.assertTrue(self.widget.graph.highlighted_curve == 0)
@@ -197,9 +193,9 @@ class TestOWKaplanMeier(WidgetTest):
 
         # check output data
         selected_data = self.get_output(self.widget.Outputs.selected_data)
-        selected_groups = selected_data.get_column_view('Group')[0]
+        selected_groups = selected_data.get_column('Group')
         self.assertEqual(12, selected_groups.size)
-        selected_groups = set(selected_data.get_column_view('Group')[0])
+        selected_groups = set(selected_data.get_column('Group'))
         self.assertEqual(2, len(selected_groups))
         self.assertIn(0, selected_groups)
         self.assertIn(1, selected_groups)
@@ -223,9 +219,9 @@ class TestOWKaplanMeier(WidgetTest):
 
         # check output data
         selected_data = self.get_output(self.widget.Outputs.selected_data)
-        selected_groups = selected_data.get_column_view('Group')[0]
+        selected_groups = selected_data.get_column('Group')
         self.assertEqual(6, selected_groups.size)
-        selected_groups = set(selected_data.get_column_view('Group')[0])
+        selected_groups = set(selected_data.get_column('Group'))
         self.assertEqual(1, len(selected_groups))
         self.assertIn(0, selected_groups)
         self.assertNotIn(1, selected_groups)
@@ -249,9 +245,9 @@ class TestOWKaplanMeier(WidgetTest):
 
         # check output data
         selected_data = self.get_output(self.widget.Outputs.selected_data)
-        selected_groups = selected_data.get_column_view('Group')[0]
+        selected_groups = selected_data.get_column('Group')
         self.assertEqual(6, selected_groups.size)
-        selected_groups = set(selected_data.get_column_view('Group')[0])
+        selected_groups = set(selected_data.get_column('Group'))
         self.assertEqual(1, len(selected_groups))
         self.assertIn(1, selected_groups)
         self.assertNotIn(0, selected_groups)
