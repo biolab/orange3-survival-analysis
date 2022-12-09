@@ -10,4 +10,4 @@ on:
 
 jobs:
   test:
-    uses: jakakokosar/orange-ci-cd/.github/workflows/test-addons.yml@remove_tox_pip_upgrade
+    uses: biolab/orange-ci-cd/.github/workflows/test-addons.yml@master
