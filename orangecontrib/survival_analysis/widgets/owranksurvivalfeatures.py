@@ -201,7 +201,7 @@ class OWRankSurvivalFeatures(OWWidget, ConcurrentWidgetMixin):
     settingsHandler = DomainContextHandler()
     selected_attrs = ContextSetting([], schema_only=True)
     selection_method = Setting(select_n_best, schema_only=True)
-    n_selected = Setting(20, schema_only=True)
+    n_selected = Setting(5, schema_only=True)
     score_method = Setting(0, schema_only=True)
     auto_commit: bool = Setting(True, schema_only=True)
 
