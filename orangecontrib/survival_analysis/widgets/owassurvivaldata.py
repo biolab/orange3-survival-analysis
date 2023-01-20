@@ -97,7 +97,10 @@ class OWAsSurvivalData(OWWidget):
 
         self.time_var = time_var_model[0] if len(time_var_model) else None
         self.event_var = event_var_model[0] if len(event_var_model) else None
-        self.openContext(domain)
+
+        if self.time_var is not None and self.event_var is not None:
+            self.openContext(domain)
+
         self.commit.now()
 
     def as_survival_data(self, data: Table) -> Optional[Table]:
