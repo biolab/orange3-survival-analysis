@@ -99,7 +99,6 @@ class OWCoxRegression(OWBaseLearner):
             minValue=0.01,
             maxValue=0.99,
             intOnly=False,
-            ticks=0.1,
             createLabel=False,
             width=120,
             step=0.01,
