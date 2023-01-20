@@ -5,6 +5,11 @@ Change Log
 ------------
 * ...
 
+[0.5.1] - 2023-01-20
+--------------------
+##### Fixes
+* owassurvivaldata: fix setting initialzation ([#61](../../pull/61))
+
 [0.5.0] - 2022-12-06
 --------------------
 ##### Enhancements
@@ -43,7 +48,8 @@ Change Log
 * New widget: Kaplan-Meier Plot
 
 
-[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.5.0...master
+[next]: https://github.com/biolab/orange3-survival-analysis/compare/0.5.1...master
+[0.5.1]: https://github.com/biolab/orange3-survival-analysis/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/biolab/orange3-survival-analysis/compare/0.2.0...0.3.0
