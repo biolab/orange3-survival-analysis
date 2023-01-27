@@ -14,7 +14,7 @@ from orangecontrib.survival_analysis.widgets.data import (
 
 def to_data_frame(table: Table) -> pd.DataFrame:
     columns = table.domain.attributes + table.domain.class_vars
-    df = pd.DataFrame({col.name: table.get_column_view(col)[0] for col in columns})
+    df = pd.DataFrame({col.name: table.get_column(col) for col in columns})
     df = df.dropna(axis=0)
     return df
 
