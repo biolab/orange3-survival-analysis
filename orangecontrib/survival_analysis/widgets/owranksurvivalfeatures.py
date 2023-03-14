@@ -150,7 +150,6 @@ def cox_regression_scorer(data: Table, time_var: str, event_var: str, state: Tas
 
 
 def log_rank_scorer(data: Table, time_var: str, event_var: str, state: TaskState):
-
     time = data.get_column(time_var)
     event = data.get_column(event_var)
     progress_steps = iter(np.linspace(0, 100, len(data.domain.attributes)))

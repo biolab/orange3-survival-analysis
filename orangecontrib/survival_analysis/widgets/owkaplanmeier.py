@@ -180,7 +180,6 @@ class KaplanMeierViewBox(ViewBox):
             self.parent.plotItem.scene().blockSignals(True)
             ev.accept()
             if ev.button() == Qt.LeftButton:
-
                 start_pos = self.mapToView(ev.buttonDownPos())
                 end_pos = self.mapToView(ev.pos())
                 self.selection_changed.emit((start_pos.x(), end_pos.x()), False)
@@ -315,7 +314,6 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
         y_pixel = self.HIGHLIGHT_RADIUS * y_pixel_size
 
         for curve_id, curve in self.curves.items():
-
             points = np.column_stack((curve.x, curve.y))
             line_segments = np.column_stack((points[:-1, :], points[1:, :]))
 

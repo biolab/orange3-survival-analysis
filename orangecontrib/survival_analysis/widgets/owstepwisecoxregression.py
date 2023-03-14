@@ -28,7 +28,6 @@ class CustomInfiniteLine(pg.InfiniteLine):
         self._parent = parent
 
     def setPos(self, pos):
-
         if isinstance(pos, (list, tuple)):
             pos_x, pos_y = pos
         elif isinstance(pos, QPointF):

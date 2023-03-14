@@ -1059,7 +1059,6 @@ class OWSurvivalNomogram(OWWidget):
         point_text,
         name_offset,
     ):
-
         values = self.get_ruler_values(0, 100, max_width)
         min_p, max_p = min(values), max(values)
         diff_ = np.nan_to_num(max_p - min_p)
@@ -1125,7 +1124,6 @@ class OWSurvivalNomogram(OWWidget):
         name_offset,
         points,
     ):
-
         values = self.get_ruler_values(0, points.sum(), max_width)
         min_sum, max_sum = min(values), max(values)
         diff_ = np.nan_to_num(max_sum - min_sum)
