@@ -19,6 +19,7 @@ and [example workflows](https://orangedatamining.com/workflows/Survival-Analysis
 
 Blog posts:
 - [An introduction to the Kaplan-Meier Estimator](https://orangedatamining.com/blog/2022/2022-05-25-KaplanMeier/)
+- [Cox regression in Orange](https://orangedatamining.com/blog/2023/2023-01-27-cox-regression-in-orange/)
 
 
 # Easy installation
