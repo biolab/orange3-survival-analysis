@@ -31,7 +31,6 @@ from Orange.widgets.utils.annotated_data import (
     ANNOTATED_DATA_SIGNAL_NAME,
 )
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
-from Orange.data.filter import IsDefined
 
 
 from orangecontrib.survival_analysis.widgets.data import (
@@ -594,12 +593,7 @@ class OWKaplanMeier(OWWidget):
     @check_survival_data
     def set_data(self, data: Table):
         self.closeContext()
-
-        if data and data.has_missing():
-            filter_ = IsDefined(columns=data.domain.class_vars)
-            self.data = filter_(data)
-        else:
-            self.data = data
+        self.data = data
 
         # exclude class vars
         domain = data.domain if data else None

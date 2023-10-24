@@ -1,0 +1,43 @@
+
+package:
+  name: orange3-survival-analysis
+  version: {{ GIT_DESCRIBE_TAG }}
+
+source:
+  git_url: ./
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - python -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - Orange3 >=3.32.0
+    - lifelines
+    - statsmodels
+
+test:
+  imports:
+    - orangecontrib.survival_analysis
+
+about:
+  home: http://orange.biolab.si/
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Survival Analysis add-on for Orange3 data mining suite
+  description: |
+    Orange3 Survival Analysis add-on for the Orange3 data mining suite.
+  dev_url: https://github.com/biolab/orange3-survival-analysis
+
+extra:
+  recipe-maintainers:
+    - primozgodec
+    - markotoplak
+    - JakaKokosar

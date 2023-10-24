@@ -61,8 +61,6 @@ def check_survival_data(f):
             if not contains_survival_endpoints(data.domain):
                 widget.Error.missing_survival_data()
                 data = None
-            elif data.has_missing():
-                widget.Warning.missing_values_detected()
 
         return f(widget, data, *args, **kwargs)
 
