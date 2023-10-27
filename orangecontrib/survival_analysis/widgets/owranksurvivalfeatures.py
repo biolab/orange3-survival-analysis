@@ -51,7 +51,7 @@ def log_rank_scorer(data: Table, time_var: str, event_var: str, state: TaskState
         return results
 
     lazy_result = wrapper(list(data.domain.attributes))
-    results = lazy_result.compute(lazy_result)
+    results = lazy_result.compute()
 
     state.set_progress_value(100)
     return results
