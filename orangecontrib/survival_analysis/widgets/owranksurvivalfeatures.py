@@ -1,11 +1,7 @@
 import numpy as np
-import multiprocessing
-import queue
-from multiprocessing import cpu_count
-from functools import partial
+import dask
 from typing import Any, Optional
 
-from lifelines import CoxPHFitter
 from lifelines.statistics import multivariate_logrank_test
 from statsmodels.stats.multitest import fdrcorrection
 
@@ -31,138 +27,33 @@ from orangecontrib.survival_analysis.widgets.data import (
     check_survival_data,
     get_survival_endpoints,
 )
-from orangecontrib.survival_analysis.modeling.cox import to_data_frame
 
 
 class ScoreMethods:
     multivariate_log_rank = 0
     cox_regression = 1
 
-    labels = ['Multivariate log-rank test', 'Cox regression']
-
-
-def __process_batch(queue, time_var, event_var, df):
-    batch_results = []
-    cph = CoxPHFitter()
-
-    for covariate in [col for col in df.columns if col not in (time_var, event_var)]:
-        queue.put(covariate)
-        # fit cox
-        model = cph.fit(
-            df[[time_var, event_var, covariate]],
-            duration_col=time_var,
-            event_col=event_var,
-        )
-        # log-likelihood ratio test
-        ll_ratio_test = model.log_likelihood_ratio_test()
-        batch_results.append(
-            (
-                covariate,
-                ll_ratio_test.test_statistic,
-                ll_ratio_test.p_value,
-            )
-        )
-
-    return np.array(batch_results)
-
-
-def cox_regression_scorer_multicore(
-    data: Table, time_var: str, event_var: str, state: TaskState
-):
-    attr_name_to_variable = {attr.name: attr for attr in data.domain.attributes}
-    attrs = list(attr_name_to_variable.keys())
-
-    # order of the data gets lost with map_async
-    attr_to_result = {attr.name: None for attr in data.domain.attributes}
-
-    with multiprocessing.Manager() as _manager:
-        _queue = _manager.Queue()
-        _cpu_count = cpu_count()
-
-        df = to_data_frame(data)
-        batches = (
-            df[[time_var, event_var] + list(batch)]
-            for batch in [attrs[i::_cpu_count] for i in range(_cpu_count)]
-        )
-
-        progress_steps = iter(np.linspace(0, 100, len(attrs)))
-
-        with multiprocessing.Pool(processes=_cpu_count) as pool:
-            results = pool.map_async(
-                partial(
-                    __process_batch,
-                    _queue,
-                    time_var,
-                    event_var,
-                ),
-                batches,
-            )
-
-            while True:
-                try:
-                    state.set_progress_value(next(progress_steps))
-                    _queue.get(timeout=3)
-                except (queue.Empty, StopIteration):
-                    break
-
-            stacked_result = np.vstack(results.get())
-            covariate_names = stacked_result[:, 0].tolist()
-            results = stacked_result[:, 1:].astype(float)
-
-            # map attr name to results in 'attr_to_result' dict
-            for attr_name, row_data in zip(covariate_names, results):
-                attr_to_result[attr_name] = row_data.tolist()
-
-            # output sorted data
-            return [
-                [attr_name_to_variable[attr_name]] + row_data
-                for attr_name, row_data in attr_to_result.items()
-            ]
-
-
-def cox_regression_scorer(data: Table, time_var: str, event_var: str, state: TaskState):
-    progress_steps = iter(np.linspace(0, 100, len(data.domain.attributes)))
-
-    attr_name_to_variable = {attr.name: attr for attr in data.domain.attributes}
-
-    df = to_data_frame(data)
-    cph = CoxPHFitter()
-    results = []
-
-    for attr_name in [col for col in df.columns if col not in (time_var, event_var)]:
-        # fit cox
-        model = cph.fit(
-            df[[time_var, event_var, attr_name]],
-            duration_col=time_var,
-            event_col=event_var,
-        )
-        # log-likelihood ratio test
-        ll_ratio_test = model.log_likelihood_ratio_test()
-        results.append(
-            [
-                attr_name_to_variable[attr_name],
-                ll_ratio_test.test_statistic,
-                ll_ratio_test.p_value,
-            ]
-        )
-        state.set_progress_value(next(progress_steps))
-    return results
+    labels = ['Multivariate log-rank test']
 
 
 def log_rank_scorer(data: Table, time_var: str, event_var: str, state: TaskState):
     time = data.get_column(time_var)
     event = data.get_column(event_var)
-    progress_steps = iter(np.linspace(0, 100, len(data.domain.attributes)))
 
-    results = []
-    for var in list(data.domain.attributes):
-        column_values = mask = data.get_column(var)
-        if var.is_continuous:
-            mask = column_values > np.median(column_values)
-        log_rank = multivariate_logrank_test(time, mask, event)
-        results.append([var, log_rank.test_statistic, log_rank.p_value])
-        state.set_progress_value(next(progress_steps))
+    @dask.delayed
+    def wrapper(attrs):
+        results = []
+        for var in attrs:
+            column_values = data.get_column(var)
+            mask = column_values > np.median(column_values, axis=0)
+            log_rank = multivariate_logrank_test(time, mask, event)
+            results.append([var, log_rank.test_statistic, log_rank.p_value])
+        return results
 
+    lazy_result = wrapper(list(data.domain.attributes))
+    results = lazy_result.compute(lazy_result)
+
+    state.set_progress_value(100)
     return results
 
 
@@ -172,10 +63,6 @@ def worker(data: Table, score_method, state: TaskState):
 
     if score_method == ScoreMethods.multivariate_log_rank:
         scorer = log_rank_scorer
-    elif score_method == ScoreMethods.cox_regression:
-        scorer = (
-            cox_regression_scorer if columns <= 100 else cox_regression_scorer_multicore
-        )
     else:
         raise ValueError('Unexpected scorer type')
 
