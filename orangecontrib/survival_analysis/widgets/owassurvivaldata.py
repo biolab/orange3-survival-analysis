@@ -17,6 +17,7 @@ from orangecontrib.survival_analysis.widgets.data import (
     TIME_VAR,
     EVENT_VAR,
     TIME_TO_EVENT_VAR,
+    get_survival_endpoints,
 )
 
 
@@ -36,9 +37,9 @@ class OWAsSurvivalData(OWWidget):
         data = Output('Data', Table)
 
     settingsHandler = DomainContextHandler()
-    time_var = ContextSetting(None, schema_only=True)
-    event_var = ContextSetting(None, schema_only=True)
-    auto_commit: bool = Setting(True, schema_only=True)
+    time_var = ContextSetting(None)
+    event_var = ContextSetting(None)
+    auto_commit: bool = Setting(True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,12 +83,18 @@ class OWAsSurvivalData(OWWidget):
             self._data = data.transform(data.domain)
             self._data.attributes = data.attributes.copy()
             # look for survival data in meta and class vars only.
-            vars_ = [
+            metas = [
                 var
-                for var in data.domain.metas + data.domain.class_vars
+                for var in data.domain.metas
                 if not isinstance(var, (TimeVariable, StringVariable))
             ]
-            domain = Domain(vars_)
+            class_vars = [
+                var
+                for var in data.domain.class_vars
+                if not isinstance(var, (TimeVariable, StringVariable))
+            ]
+
+            domain = Domain([], metas=metas, class_vars=class_vars)
 
         self.controls.time_var.model().set_domain(domain)
         self.controls.event_var.model().set_domain(domain)
@@ -95,9 +102,16 @@ class OWAsSurvivalData(OWWidget):
         time_var_model = self.controls.time_var.model()
         event_var_model = self.controls.event_var.model()
 
-        self.time_var = time_var_model[0] if len(time_var_model) else None
-        self.event_var = event_var_model[0] if len(event_var_model) else None
+        # If not found in the domain then default to the first var in model.
+        _time_var, _event_var = get_survival_endpoints(domain)
 
+        if len(time_var_model):
+            self.time_var = time_var_model[0] if _time_var is None else _time_var
+
+        if len(event_var_model):
+            self.event_var = event_var_model[0] if _event_var is None else _event_var
+
+        # Lastly, respect saved domain context
         if self.time_var is not None and self.event_var is not None:
             self.openContext(domain)
 
