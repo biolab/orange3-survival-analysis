@@ -228,7 +228,7 @@ class CustomLegendItem(LegendItem):
         self.items.append(separator)
 
     def set_curve(self, curve: EstimatedFunctionCurve):
-        curve_label = LabelItem(curve.label, color=curve.get_color())
+        curve_label = LabelItem(html.escape(curve.label), color=curve.get_color())
         samples = LabelItem(
             f'{curve.num_of_samples - curve.num_of_censored_samples}/{curve.num_of_samples}'
         )
