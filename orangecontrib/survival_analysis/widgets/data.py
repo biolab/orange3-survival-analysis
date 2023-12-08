@@ -33,7 +33,7 @@ def get_survival_endpoints(
 ) -> Tuple[Optional[Variable], Optional[Variable]]:
     time_var = None
     event_var = None
-    if domain and contains_survival_endpoints(domain):
+    if domain is not None and contains_survival_endpoints(domain):
         class_vars = domain.class_vars
         for var in class_vars:
             surv_var_type = var.attributes[TIME_TO_EVENT_VAR]
