@@ -8,7 +8,7 @@ from itertools import chain
 from collections import OrderedDict
 from enum import IntEnum
 from functools import singledispatch
-from typing import List
+
 import time
 import numpy as np
 
@@ -79,7 +79,7 @@ def _(var: DiscreteVariable, *_):
 
 
 @_get_labels.register(ContinuousVariable)
-def _(_: ContinuousVariable, data_extremes: List, values: np.ndarray, *__):
+def _(_: ContinuousVariable, data_extremes: list, values: np.ndarray, *__):
     diff_ = np.nan_to_num(values[-1] - values[0])
     k = (data_extremes[1] - data_extremes[0]) / diff_ if diff_ else 0
     return [str(np.round(v * k + data_extremes[0], 1)) for v in values]

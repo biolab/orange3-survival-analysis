@@ -1,6 +1,6 @@
 import numpy as np
 from functools import partial
-from typing import Optional, Any, Tuple
+from typing import Optional, Any
 from enum import IntEnum
 
 from lifelines.statistics import multivariate_logrank_test
@@ -169,7 +169,7 @@ class OWCohorts(OWWidget, ConcurrentWidgetMixin):
 
     def stratify_data(
         self, data: Table, state: TaskState
-    ) -> Optional[Tuple[Table, CoxRegressionModel]]:
+    ) -> Optional[tuple[Table, CoxRegressionModel]]:
         steps = iter(np.linspace(0, 100, len(data)))
 
         def callback():

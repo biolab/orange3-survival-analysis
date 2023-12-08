@@ -2,7 +2,7 @@ import html
 import numpy as np
 import pyqtgraph as pg
 
-from typing import Dict, List, Optional, NamedTuple
+from typing import Optional, NamedTuple
 from itertools import zip_longest
 
 from AnyQt.QtGui import QBrush, QColor, QPainterPath, QPalette
@@ -72,7 +72,7 @@ class EstimatedFunctionCurve:
         )
 
         self._label: str = label
-        self.color: List[int] = color
+        self.color: list[int] = color
 
         # refactor this
         time, survival = self._kmf.survival_function_.reset_index().values.T.tolist()
@@ -155,8 +155,8 @@ class EstimatedFunctionCurve:
 
 
 class SelectionInterval(NamedTuple):
-    x: List[int]
-    y: List[int]
+    x: list[int]
+    y: list[int]
 
 
 class KaplanMeierViewBox(ViewBox):
@@ -277,7 +277,7 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
     HIGHLIGHT_RADIUS = 20  # in pixels
     selection_changed = Signal()
 
-    selection: Dict[int, Optional[SelectionInterval]] = ContextSetting({})
+    selection: dict[int, Optional[SelectionInterval]] = ContextSetting({})
 
     def __init__(self, parent: OWWidget = None):
         gui.OWComponent.__init__(self, widget=parent)
@@ -285,8 +285,8 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
         self.parent: OWWidget = parent
         self.highlighted_curve: Optional[int] = None
-        self.curves: Dict[int, EstimatedFunctionCurve] = {}
-        self.__selection_items: Dict[int, Optional[pg.PlotDataItem]] = {}
+        self.curves: dict[int, EstimatedFunctionCurve] = {}
+        self.__selection_items: dict[int, Optional[pg.PlotDataItem]] = {}
 
         self.view_box: KaplanMeierViewBox = self.getViewBox()
 
@@ -645,7 +645,7 @@ class OWKaplanMeier(OWWidget):
         if self.group_var is not None and index is not None:
             return list(self.group_var.colors[index])
 
-    def generate_plot_curves(self) -> List[EstimatedFunctionCurve]:
+    def generate_plot_curves(self) -> list[EstimatedFunctionCurve]:
         if self.time_var is None or self.event_var is None:
             return []
 

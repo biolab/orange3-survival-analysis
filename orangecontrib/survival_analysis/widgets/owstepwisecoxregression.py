@@ -1,7 +1,7 @@
 import itertools
 import numpy as np
 import pyqtgraph as pg
-from typing import Dict, List, Optional, NamedTuple, Any
+from typing import Optional, NamedTuple, Any
 
 from AnyQt.QtGui import QColor
 from AnyQt.QtCore import Qt, QPointF, pyqtSignal as Signal
@@ -59,7 +59,7 @@ class StepwiseCoxRegressionPlot(gui.OWComponent, pg.PlotWidget):
         self.view_box = self.getViewBox()
         self.plotItem.setMouseEnabled(x=False, y=False)
 
-        self.map_x_to_y: Optional[Dict[str, str]] = None
+        self.map_x_to_y: Optional[dict[str, str]] = None
         self.plot_line: Optional[pg.PlotDataItem] = None
         self.horizontal_line = CustomInfiniteLine(self, movable=True)
         self.horizontal_line.setPen(
@@ -149,7 +149,7 @@ class OWStepwiseCoxRegression(OWWidget, ConcurrentWidgetMixin):
 
         self.learner: Optional[CoxRegressionLearner] = CoxRegressionLearner()
         self.data: Optional[Table] = None
-        self.trace: Optional[List[Result]] = None
+        self.trace: Optional[list[Result]] = None
         gui.rubber(self.controlArea)
 
         self.graph: StepwiseCoxRegressionPlot = StepwiseCoxRegressionPlot(parent=self)

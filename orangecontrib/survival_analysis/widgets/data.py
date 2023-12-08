@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Tuple, Optional
+from typing import Optional
 
 from Orange.widgets.utils.messages import UnboundMsg
 from Orange.data import Table, Domain, Variable
@@ -30,7 +30,7 @@ def contains_survival_endpoints(domain: Domain):
 
 def get_survival_endpoints(
     domain: Domain,
-) -> Tuple[Optional[Variable], Optional[Variable]]:
+) -> tuple[Optional[Variable], Optional[Variable]]:
     time_var = None
     event_var = None
     if domain is not None and contains_survival_endpoints(domain):
