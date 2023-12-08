@@ -617,10 +617,7 @@ class OWKaplanMeier(OWWidget):
         self.graph.selection = {}
         self.openContext(domain)
 
-        self.graph.curves = {
-            curve_id: curve
-            for curve_id, curve in enumerate(self.generate_plot_curves())
-        }
+        self.graph.curves = dict(enumerate(self.generate_plot_curves()))
         self.graph.update_plot(**self._get_plot_options())
 
         self.commit.now()
@@ -639,10 +636,7 @@ class OWKaplanMeier(OWWidget):
         if not self.data:
             return
 
-        self.graph.curves = {
-            curve_id: curve
-            for curve_id, curve in enumerate(self.generate_plot_curves())
-        }
+        self.graph.curves = dict(enumerate(self.generate_plot_curves()))
         self.graph.clear_selection()
         self.graph.update_plot(**self._get_plot_options())
         self.commit.now()
