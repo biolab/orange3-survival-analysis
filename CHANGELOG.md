@@ -5,6 +5,11 @@ Change Log
 ------------
 * ...
 
+[0.6.1] - 2023-12-08
+--------------------
+##### Enhancements
+* CI - User reusable workflow for automated release ([#68](../../pull/68))
+
 [0.6.0] - 2023-12-08
 --------------------
 
