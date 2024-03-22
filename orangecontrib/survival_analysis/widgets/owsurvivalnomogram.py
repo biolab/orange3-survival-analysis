@@ -1081,20 +1081,22 @@ class OWSurvivalNomogram(OWWidget):
         )
 
         feature_items = [
-            DiscreteFeatureItem(
-                name_item, attr, point, scale_x, name_offset, -scale_x * min_p
-            )
-            if attr.is_discrete
-            else cont_feature_item_class(
-                name_item,
-                attr,
-                self.data_extremes[i],
-                self.get_ruler_values(
-                    point.min(), point.max(), scale_x * point.ptp(), False
-                ),
-                scale_x,
-                name_offset,
-                -scale_x * min_p,
+            (
+                DiscreteFeatureItem(
+                    name_item, attr, point, scale_x, name_offset, -scale_x * min_p
+                )
+                if attr.is_discrete
+                else cont_feature_item_class(
+                    name_item,
+                    attr,
+                    self.data_extremes[i],
+                    self.get_ruler_values(
+                        point.min(), point.max(), scale_x * point.ptp(), False
+                    ),
+                    scale_x,
+                    name_offset,
+                    -scale_x * min_p,
+                )
             )
             for i, attr, name_item, point in zip(
                 attr_inds, attributes, name_items, points
