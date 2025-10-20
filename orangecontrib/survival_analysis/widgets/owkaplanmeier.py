@@ -98,6 +98,7 @@ class EstimatedFunctionCurve:
         self.median_survival = median = np.round(
             median_survival_times(self._kmf.survival_function_.astype(np.float32)), 1
         )
+
         self.median_vertical = pg.PlotDataItem(
             x=(median, median), y=(0, 0.5), pen=pg.mkPen(**MEDIAN_LINE_PEN_STYLE)
         )
@@ -212,19 +213,26 @@ class CustomLegendItem(LegendItem):
         self._sample_column_label = 'n/N'
         self._median_column_label = 'Median'
         self._log_rank_test_label = 'Log-rank p'
+        self._show_median_column = True
+
+    def set_show_median_column(self, show: bool):
+        self._show_median_column = show
 
     def set_header(self):
         samples = LabelItem(self._sample_column_label)
-        median = LabelItem(self._median_column_label)
         separator = HLineItemSample()
 
         self.layout.addItem(samples, 1, 2)
-        self.layout.addItem(median, 1, 3)
         self.items.append(samples)
-        self.items.append(median)
+
+        if self._show_median_column:
+            median = LabelItem(self._median_column_label)
+            self.layout.addItem(median, 1, 3)
+            self.items.append(median)
 
         row = self.layout.rowCount()
-        self.layout.addItem(separator, row, 1, row, 3)
+        end_col = 3 if self._show_median_column else 2
+        self.layout.addItem(separator, row, 1, row, end_col)
         self.items.append(separator)
 
     def set_curve(self, curve: EstimatedFunctionCurve):
@@ -232,16 +240,17 @@ class CustomLegendItem(LegendItem):
         samples = LabelItem(
             f'{curve.num_of_samples - curve.num_of_censored_samples}/{curve.num_of_samples}'
         )
-        median = LabelItem(f'{curve.median_survival}')
 
         row = self.layout.rowCount()
         self.items.append(curve_label)
         self.items.append(samples)
-        self.items.append(median)
 
         self.layout.addItem(curve_label, row, 1)
         self.layout.addItem(samples, row, 2)
-        self.layout.addItem(median, row, 3)
+        if self._show_median_column:
+            median = LabelItem(f'{curve.median_survival}')
+            self.items.append(median)
+            self.layout.addItem(median, row, 3)
 
     def set_footer(self, p):
         separator = HLineItemSample()
@@ -249,12 +258,17 @@ class CustomLegendItem(LegendItem):
         log_rank_p = LabelItem(html.escape(p))
 
         row = self.layout.rowCount()
-        self.layout.addItem(separator, row, 1, row, 3)
+        end_col = 3 if self._show_median_column else 2
+        self.layout.addItem(separator, row, 1, row, end_col)
         self.items.append(separator)
 
         row = self.layout.rowCount()
-        self.layout.addItem(log_rank_label, row, 2)
-        self.layout.addItem(log_rank_p, row, 3)
+        if self._show_median_column:
+            self.layout.addItem(log_rank_label, row, 2)
+            self.layout.addItem(log_rank_p, row, 3)
+        else:
+            self.layout.addItem(log_rank_label, row, 1)
+            self.layout.addItem(log_rank_p, row, 2)
         self.items.append(log_rank_label)
         self.items.append(log_rank_p)
 
@@ -450,6 +464,9 @@ class KaplanMeierPlot(gui.OWComponent, pg.PlotWidget):
 
     def update_legend(self):
         self.legend.hide()
+        # Hide median column if all curves have infinite median
+        all_inf = all(np.isinf(curve.median_survival) for curve in self.curves.values())
+        self.legend.set_show_median_column(not all_inf)
 
         self.legend.set_header()
         for curve in list(self.curves.values()):
@@ -715,5 +732,6 @@ class OWKaplanMeier(OWWidget):
 if __name__ == "__main__":
     from orangewidget.utils.widgetpreview import WidgetPreview
 
-    table = Table('http://datasets.biolab.si/core/melanoma.tab')
+    # table = Table('http://datasets.biolab.si/core/melanoma.tab')
+    table = Table('/Users/jakakokosar/Downloads/GSE96058-prepared.pkl')
     WidgetPreview(OWKaplanMeier).run(input_data=table)
