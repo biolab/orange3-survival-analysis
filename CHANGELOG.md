@@ -5,6 +5,12 @@ Change Log
 ------------
 * ...
 
+[0.6.3] - 2025-10-20
+--------------------
+##### Enhancements 
+* README.md - Update README.md with new information ([14d7b961](../../commit/14d7b961289f5f4246be9c90c94d577514f8ec4b))
+
+
 [0.6.2] - 2025-10-20
 --------------------
 ##### Enhancements
