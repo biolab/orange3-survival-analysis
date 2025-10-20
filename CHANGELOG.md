@@ -5,6 +5,12 @@ Change Log
 ------------
 * ...
 
+[0.6.2] - 2025-10-20
+--------------------
+##### Enhancements
+* Kaplan-Meier Plot - Hide median column if all curves have infinite median ([89209c04](../../commit/89209c0496c9395866efa6f1c59f870f9d1f7fe6))
+
+
 [0.6.1] - 2023-12-08
 --------------------
 ##### Enhancements
