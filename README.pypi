@@ -1,2 +1,11 @@
 Orange3-Survival-Analysis
 =========================
+
+
+Survival analysis add-on for the [Orange](http://orange.biolab.si) data mining suite. It includes widgets for Kaplan–Meier analysis, Cox regression, survival nomograms, feature ranking, cohort construction, and tools to convert datasets into survival format—so you can go from exploring curves to validating risk models, all within Orange.
+
+
+To learn how to use this add-on, see: 
+- [widget documentation](https://orangedatamining.com/widget-catalog/survival-analysis/kaplan-meier-plot/),
+- [example workflows](https://orangedatamining.com/workflows/Survival-Analysis/),
+- [or YouTube tutorial playlist](https://www.youtube.com/watch?v=kWWcZ3sBtuE&list=PLmNPvQr9Tf-Yw7Zd9nlewFleMajUsjOrd)
